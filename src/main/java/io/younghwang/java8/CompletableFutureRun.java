@@ -1,5 +1,7 @@
 package io.younghwang.java8;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -7,6 +9,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 public class CompletableFutureRun {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
@@ -77,7 +80,68 @@ public class CompletableFutureRun {
 
         voidCompletableFuture2.get();
 
+        // future 가 순차적으로 실행이 필요한 경우
+        CompletableFuture<String> hello = CompletableFuture.supplyAsync(() -> {
+            System.out.println("Hello");
+            return "Hello";
+        });
+
+        CompletableFuture<String> helloWorld = hello.thenCompose(CompletableFutureRun::getWorld);
+
+        System.out.println(helloWorld.get());
+
+
+        // future 가 연관 없이 각각 실행이 되고 그 후 결합이 필요한 경우
+        CompletableFuture<String> world = CompletableFuture.supplyAsync(() -> {
+            System.out.println("World");
+            return "World";
+        });
+
+        CompletableFuture<String> helloWorld1 = hello.thenCombine(world, (h, w) -> h + " " + w);
+        System.out.println(helloWorld1.get());
+
+        // 2개 이상의 future 연결 하기
+        List<CompletableFuture> completableFutures = Arrays.asList(hello, world);
+        CompletableFuture[] futuresArray = completableFutures.toArray(new CompletableFuture[completableFutures.size()]);
+
+        CompletableFuture<List<Object>> listCompletableFuture = CompletableFuture.allOf(futuresArray)
+                .thenApply(v ->
+                    completableFutures.stream()
+                            .map(CompletableFuture::join)
+                            .collect(Collectors.toList()));
+
+        listCompletableFuture.get().forEach(System.out::println);
+
+        // 둘중 아무거나 빠른 결과 호출
+        System.out.println("==============");
+        CompletableFuture<Void> voidCompletableFuture3 = CompletableFuture.anyOf(hello, world).thenAccept(System.out::println);
+        voidCompletableFuture3.get();
+
+        // exception 처리
+        boolean throwError = true;
+
+        CompletableFuture<String> helloException = CompletableFuture.supplyAsync(() -> {
+            if (throwError)
+                throw new IllegalArgumentException();
+            System.out.println("Hello");
+            return "Hello";
+        });
+
+        CompletableFuture<String> exceptionally = helloException.exceptionally(ex -> {
+            System.out.println(ex);
+            return "Error!";
+        });
+
+        System.out.println(exceptionally.get());
+
         executorService.shutdown();
         executorService1.shutdown();
+    }
+
+    private static CompletableFuture<String> getWorld(String message) {
+        return CompletableFuture.supplyAsync(() -> {
+            System.out.println(message + " World " + Thread.currentThread().getName());
+            return message + " World";
+        });
     }
 }
