@@ -1,2 +1,5 @@
-rootProject.name = 'java-8'
+rootProject.name = 'java'
+include 'java8'
+include 'java8'
+include 'java8'
 
