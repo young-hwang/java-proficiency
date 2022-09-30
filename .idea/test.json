@@ -1,0 +1,6 @@
+{
+  "type": "webview",
+  "body": "{\"header\":{\"imqa_web_agent_version\":1,\"protocol\":\"https\",\"host\":\"glistening-marzipan-f45e0d.netlify.app\",\"pathname\":\"/\",\"screen_name\":\"https://glistening-marzipan-f45e0d.netlify.app/\",\"startTime\":1692174715253,\"browserVersion\":\"5.0 (Linux; Android 11; LM-Q920N Build/RKQ1.210106.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/115.0.5790.166 Mobile Safari/537.36\",\"webviewTxId\":\"9b140ae6-88f3-4c9b-abda-30f6df6f675a\"},\"body\":{\"url\":\"https://fakestoreapi.com/products/categories\",\"status\":200,\"method\":\"GET\",\"type\":\"xhr\",\"protocol\":\"https\",\"host\":\"fakestoreapi.com\",\"pathname\":\"/products/categories\",\"resource_type\":\"xmlhttprequest\",\"duration\":899,\"startTime\":2197,\"timing\":{\"network\":0,\"wait\":0,\"server\":899.8999999985099}},\"startTime\":1692174715253,\"endTime\":1692174715253}",
+  "behaviorTxId": "944410eb-c9b5-4cbf-b0cc-4feea90f162f",
+  "txId": "16ab9636-bd0e-4b78-9655-9592edeed1e3"
+}

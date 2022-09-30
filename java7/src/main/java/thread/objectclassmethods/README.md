@@ -8,4 +8,4 @@ Thread 클래스에 선언된 메소드 외에 Object 클래스에는 쓰레드�
 |void| notify()                      | Object 객체의 모니터에 대기하고 있는 단일 쓰레드를 깨운다                                          |
 |void| notifyAll()                   | Object 객체의 모니터에 대기하고 있는 모든 쓰레드를 깨운다                                          |
 
-
+wait() 메소드를 사용하면 쓰레드가 대기 상태가 되며, notify()나 notifyAll() 메소드를 사용하면 쓰레드 대기 상태가 해제된다.
