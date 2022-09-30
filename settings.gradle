@@ -1,4 +1,6 @@
 rootProject.name = 'java'
 include 'java8'
 include 'java7'
+include 'java1.4'
+include 'java1.0'
 
