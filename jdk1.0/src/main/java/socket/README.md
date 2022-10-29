@@ -59,3 +59,38 @@ Socket 클래스의 생성자는 아래와 같습니다.
 | Socket(String host, int port, InetAddress addresss, int localPort)                      | 소켓 객체 생성 후 host와 port를 사용하는 서버에 연결, 지정된 localAddr와 localport 접속   |
 
 ServerSocket 클래스와 마찬가지로 close() 메소드를 사용하여야 소켓을 닫습니다.
+
+## UDP
+
+TCP와 달리 데이터가 제대로 전달되었다는 보장을 하지 않습니다.
+그러므로 데이터의 유실이 있어도 문제가 없을 때만 사용하는게 좋습니다.
+
+TCP와 다르게 DatagramSocket 클래스에서 보내는 역할과 받는 역할을 모두 수행합니다.
+
+그리고 TCP에서는 스트림 객체를 얻어 데이터를 주고 받았지만 UDP 통신은 스트림을 사용하지 않고 DatagramPack 클래스를 사용합니다.
+
+### DatagramSocket
+
+| 생성자                                           | 설명                                     |
+|:----------------------------------------------|:---------------------------------------|
+| DatagramSocket()                              | 소켓 객체 생성후 사용 가능한 포트로 대기                |
+| DatagramSocket(DatagramImpl impl)             | 사용자가 지정한 SocketImpl 객체를 사용하여 소켓 객체만 생성 |
+| DatagramSocket(int port)                      | 소켓 객체 생성후 지정된 port로 대기                 |
+| DatagramSocket(int port, InetAddress address) | 소켓 객체 생성후 address와 port를 사용하는 서버에 연결   |
+| DatagramSocket(SocketAddress address)         | 소켓 객체 생성후 address에 지정된 서버로 연결          |
+
+| 리턴 타입 | 메소드                            | 설명                                                    |
+|:------|:-------------------------------|:------------------------------------------------------|
+| void  | receive(DatagramPacket packet) | 메소드 호출 시 요청을 대기하고, 만약 데이터를 받았을 때에는 packet 객체에 데이터를 저장 |
+| void  | send(DatagramPacket packet)    | packet 객체에 있는 데이터 전송                                  |
+
+### DatagramPacket
+
+| 생성자                                                                               | 설명                                                         |
+|:----------------------------------------------------------------------------------|:-----------------------------------------------------------|
+| DatagramPacket(byte[] buf, int length)                                            | length의 크기를 갖는 데이터를 '받기'위한 객체 생성                           |
+| DatagramPacket(byte[] buf, int length, InetAddress address, int point)            | 지정된 adress와 port로 데이터를 전송하기 위한 객체 생성                       |
+| DatagramPacket(byte[] buf, int offset, int length)                                | 버퍼의 offset이 할당되어 있는 데이터를 전송하기 위한 객체 생성                     |
+| DatagramPacket(byte[] buf, int offset, int length, InetAddress address, int port) | 버퍼의 offset이 할당되어 있고, 지정된 address와 port로 데이터를 전송하기 위한 객체 생성 |
+| DatagramPacket(byte[] buf, int offset, int length, InetAddress address)           | 버퍼의 offset이 할당되어 있고, 지정된 소켓 address로 데이터를 전송하기 위한 객체 생성    |
+| DatagramPacket(byte[] buf, int length, SocketAddress address)                     | 지정된 소켓 address로 데이터를 전송하기 위한 객체 생성                         |
