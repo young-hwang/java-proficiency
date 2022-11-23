@@ -3,4 +3,5 @@ include 'jdk1.0'
 include 'j2se1.4'
 include 'java7'
 include 'java8'
+include 'java5'
 
