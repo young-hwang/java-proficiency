@@ -1,3 +1,5 @@
+package defaultmethod;
+
 public class DefaultInterfaceRun {
     public static void main(String[] args) {
         DefaultInterface obj = new DefaultInterfaceImpl("young");

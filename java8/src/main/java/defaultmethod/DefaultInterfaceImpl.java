@@ -1,4 +1,6 @@
-public class DefaultInterfaceImpl implements DefaultInterface{
+package defaultmethod;
+
+public class DefaultInterfaceImpl implements DefaultInterface {
     private String name;
 
     public DefaultInterfaceImpl(String name) {

@@ -1,3 +1,5 @@
+package defaultmethod;
+
 public interface DefaultInterface {
     void printName();
 
