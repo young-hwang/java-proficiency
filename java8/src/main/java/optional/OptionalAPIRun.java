@@ -1,3 +1,5 @@
+package optional;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +41,7 @@ public class OptionalAPIRun {
         System.out.println(onlineClass2.getTitle());
 
         // Exception 을 발생 시키고 싶을 경우 사용
-        // OnlineClass onlineClass3 = spring.orElseThrow(IllegalStateException::new);
+        // optional.OnlineClass onlineClass3 = spring.orElseThrow(IllegalStateException::new);
         // System.out.println(onlineClass3.getTitle());
 
         // filter 를 적용
@@ -54,11 +56,11 @@ public class OptionalAPIRun {
         Optional<OnlineClass> onlineClass6 = spring.filter(oc -> oc.getTitle().startsWith("rest"));
 
         Optional<Optional<Progress>> progress = onlineClass6.map(OnlineClass::getProgress);
-        //Optional<Progress> progress1 = progress.get();
+        //Optional<optional.Progress> progress1 = progress.get();
         // System.out.println(progress1.isPresent());
 
         // optional 을 가져 올때 flatMap 을 사용하는 경우, optional 중복 적용시 한 꺼풀 벗겨줌
-        // Optional<Progress> progress2 = onlineClass6.flatMap(OnlineClass::getProgress);
+        // Optional<optional.Progress> progress2 = onlineClass6.flatMap(optional.OnlineClass::getProgress);
         // System.out.println(progress2.isPresent());
 
     }

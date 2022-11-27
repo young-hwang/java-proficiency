@@ -1,3 +1,5 @@
+package optional;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -12,13 +14,13 @@ public class OptionalRun {
         springClasses.add(new OnlineClass(5, "rest api development", false));
 
         OnlineClass spring_boot = new OnlineClass(1, "spring boot", true);
-        // Progress is null, Exception
+        // optional.Progress is null, Exception
         // Duration studyDuration = spring_boot.getProgress().getStudyDuration();
         // System.out.println(studyDuration);
 
         // Exception 발생을 막기 위해 아래와 같이 처리
         // 에러가 발생하기 쉬운 구조
-        // Progress progress = spring_boot.getProgress();
+        // optional.Progress progress = spring_boot.getProgress();
         // if (progress != null) {
         //     System.out.println(progress.getStudyDuration());
         // }

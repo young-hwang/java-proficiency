@@ -1,3 +1,5 @@
+package optional;
+
 import java.util.Optional;
 
 public class OnlineClass {
@@ -42,7 +44,7 @@ public class OnlineClass {
 
     // 파라미터로 optional 사용하지 말것
     public void setProgress(Optional<Progress> progress) {
-        // Optional<Progress> 에 대한 null check 필요
+        // Optional<optional.Progress> 에 대한 null check 필요
         if (progress != null) {
             progress.ifPresent(p -> this.progress = p);
         }

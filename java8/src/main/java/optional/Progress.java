@@ -1,3 +1,5 @@
+package optional;
+
 import java.time.Duration;
 
 public class Progress {
