@@ -1,3 +1,5 @@
+package datetime;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -39,7 +41,7 @@ public class DateTimeRun {
         Calendar birthday2 = new GregorianCalendar(1984, Calendar.FEBRUARY, 10);
 
         // 2. 이름의 부정확함
-        // Date 정보를 가죠오는데 getTime()을 사용
+        // Date 정보를 가져 오는데 getTime()을 사용
         System.out.println(birthday2.getTime());
 
         // 3. immutable 하지 않음
