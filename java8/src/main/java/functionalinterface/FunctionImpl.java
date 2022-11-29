@@ -1,3 +1,5 @@
+package functionalinterface;
+
 import java.util.function.Function;
 
 public class FunctionImpl implements Function<Integer, Integer> {

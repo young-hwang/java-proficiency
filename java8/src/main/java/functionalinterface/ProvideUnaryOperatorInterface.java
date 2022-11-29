@@ -1,3 +1,5 @@
+package functionalinterface;
+
 import java.util.function.UnaryOperator;
 
 public class ProvideUnaryOperatorInterface {

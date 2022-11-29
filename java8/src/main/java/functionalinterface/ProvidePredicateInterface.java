@@ -1,3 +1,5 @@
+package functionalinterface;
+
 import java.util.function.Predicate;
 
 public class ProvidePredicateInterface {

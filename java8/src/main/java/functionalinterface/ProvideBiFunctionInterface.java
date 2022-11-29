@@ -1,3 +1,5 @@
+package functionalinterface;
+
 import java.util.function.BiFunction;
 
 public class ProvideBiFunctionInterface {

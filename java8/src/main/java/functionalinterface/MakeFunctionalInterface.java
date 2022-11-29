@@ -1,3 +1,5 @@
+package functionalinterface;
+
 // 추상 메소드가 하나만 존재하는 경우 함수형 인터페이스
 @FunctionalInterface
 public interface MakeFunctionalInterface {

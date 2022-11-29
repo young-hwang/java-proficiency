@@ -1,3 +1,5 @@
+package functionalinterface;
+
 import java.util.function.BinaryOperator;
 
 public class ProvideBinaryOperatorInterface {
