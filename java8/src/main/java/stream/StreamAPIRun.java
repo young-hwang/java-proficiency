@@ -1,6 +1,9 @@
+package stream;
+
 import optional.OnlineClass;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,5 +69,9 @@ public class StreamAPIRun {
                 .collect(Collectors.toList());
         resultSpring.stream()
                 .forEach(System.out::println);
+
+        Integer[] values = { 1, 3, 5};
+        List<Integer> list = Arrays.stream(values).collect(Collectors.toList());
+
     }
 }
