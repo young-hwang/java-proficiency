@@ -1,7 +1,5 @@
 package me.stream;
 
-import optional.OnlineClass;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
