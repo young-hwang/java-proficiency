@@ -1,7 +1,5 @@
 package me.lambda;
 
-import functionalinterface.MakeFunctionalInterface;
-
 public class RunFunctionalInterface {
     public static void main(String[] args) {
         // Anonymous Class
