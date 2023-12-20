@@ -11,16 +11,14 @@
 Integer[] values = { 1, 3, 5};
 List<Integer> list = new ArrayList<>(Arrays.asList(values));
 
-or
-
 List<Integer> list = Arrays.stream(values).collect(Collectors.toList());
 ```
 
 ## 스트림의 구조
 
 ```java
-list.stream().filter(x -> x > 10).count()
-    스트림생성   중개연산           중단연산
+//            스트림생성          중개연산           중단연산
+List list = Arrays.stream(values).filter(x -> x > 10).count();
 ```
 
 - 스트림 생성: 컬렉션의 목록을 스트림 객체로 변환한다. 스트림 객체는 java.util.stream 패키지의 stream을 의미한다.
@@ -42,7 +40,7 @@ list.stream().filter(x -> x > 10).count()
 - forEach / forEachOrdered
 - toArray
 - reduce
-- collecct
+- collect
 - min / max / count
 - anyMatch / allMatch / noneMatch
 - findFirst / anyArray
