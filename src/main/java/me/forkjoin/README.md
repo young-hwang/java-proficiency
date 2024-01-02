@@ -27,9 +27,9 @@ if (작업의 단위가 충분히 작은 경우) {
 이러한 식으로 Fork/Join 이 실행되기 때문에 보통 이 연산은 회귀적으로(Recursive 하게) 수행 될 때 많이 사용합니다.
 Fork/Join 기능은 java.util.concurrent 패키지의 RecursiveAction 과 RecursiveTask 라는 abstract class를 사용합니다.
 
-| RecursiveAction                                             | RecursiveTask                                                  |
-|:------------------------------------------------------------|:---------------------------------------------------------------|
-| public abstract class RecursiveActinon extends ForkJoinTask | public abstract class RecursiveTask<V> extends ForkJoinTask<V> |
+| RecursiveAction                                            | RecursiveTask                                                  |
+|:-----------------------------------------------------------|:---------------------------------------------------------------|
+| public abstract class RecursiveAction extends ForkJoinTask | public abstract class RecursiveTask<V> extends ForkJoinTask<V> |
 
 | 구분      | RecursiveTask | RecursiveAction |
 |:--------|:--|:--|
