@@ -1,8 +1,10 @@
 package me.thread.runnable;
 
+import static me.util.MyLogger.log;
+
 public class HelloRunnable implements Runnable {
     @Override
     public void run() {
-        System.out.println(Thread.currentThread().getName());
+        log("Hello Runnable");
     }
 }
