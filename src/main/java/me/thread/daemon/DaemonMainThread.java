@@ -1,5 +1,7 @@
 package me.thread.daemon;
 
+import me.util.MyLogger;
+
 public class DaemonMainThread {
     public static void main(String[] args) {
         System.out.println(Thread.currentThread().getName() + ": main() start");
