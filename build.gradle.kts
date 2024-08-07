@@ -4,6 +4,8 @@ plugins {
 
 group = "me"
 version = "1.0-SNAPSHOT"
+java.sourceCompatibility = JavaVersion.VERSION_21
+java.targetCompatibility = JavaVersion.VERSION_21
 
 repositories {
     mavenCentral()
