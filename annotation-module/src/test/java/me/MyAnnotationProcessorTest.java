@@ -24,8 +24,8 @@ public class MyAnnotationProcessorTest {
         // 컴파일할 소스 코드 작성
         String source = "package me;\n" +
                         "@MyCustomAnnotation(value = \"My Custom\", count = 30)\n" +
-                        "public class MyClass {}\n";
-        JavaFileObject file = new SimpleJavaFileObject(URI.create("string:///MyClass.java"), JavaFileObject.Kind.SOURCE) {
+                        "public class MyClazz {}\n";
+        JavaFileObject file = new SimpleJavaFileObject(URI.create("string:///MyClazz.java"), JavaFileObject.Kind.SOURCE) {
             @Override
             public CharSequence getCharContent(boolean ignoreEncodingErrors) {
                 return source;

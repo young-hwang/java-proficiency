@@ -10,6 +10,10 @@ import javax.lang.model.element.TypeElement;
 import javax.tools.Diagnostic;
 import java.util.Set;
 
+/**
+ * MyClass 자바 파일 생성 후 컴파일 처리
+ * 컴파일 시 annotation의 value와 count 값을 출력
+ */
 @SupportedAnnotationTypes("me.MyCustomAnnotation")
 @SupportedSourceVersion(SourceVersion.RELEASE_21)
 public class MyAnnotationProcessor extends AbstractProcessor {
@@ -21,6 +25,7 @@ public class MyAnnotationProcessor extends AbstractProcessor {
                 String value = myCustomAnnotation.value();
                 int count = myCustomAnnotation.count();
                 processingEnv.getMessager().printMessage(Diagnostic.Kind.NOTE, "value: " + value + ", count: " + count);
+                System.out.println("value: " + value + ", count: " + count);
             }
         }
         return true;

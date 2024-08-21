@@ -4,8 +4,8 @@ include("java8")
 include("rx-java")
 include("rx-java")
 include("annotation-module")
-include("annotation:annotation-processor")
-findProject(":annotation:annotation-processor")?.name = "annotation-processor"
-include("annotation:annotaion-client")
-include("annotation:annotaion-client", "annotation:annotation-processor")
-findProject(":annotation:annotaion-client")?.name = "annotation-client"
+include("annotation-processing-create-builder")
+include("annotation-processing-create-builder:annotation-processing")
+findProject(":annotation-processing-create-builder:annotation-processing")?.name = "annotation-processing"
+include("annotation-processing-create-builder:annotation-user")
+findProject(":annotation-processing-create-builder:annotation-user")?.name = "annotation-user"
