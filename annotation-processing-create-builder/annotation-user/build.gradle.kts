@@ -11,10 +11,14 @@ repositories {
 
 dependencies {
     implementation(project(":annotation-processing-create-builder:annotation-processing"))
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    annotationProcessor(project(":annotation-processing-create-builder:annotation-processing"))
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+// 필요한 경우 추가 컴파일 옵션 설정
+tasks.withType<JavaCompile> {
+    options.compilerArgs.add("-Amapstruct.suppressGeneratorTimestamp=true")
 }

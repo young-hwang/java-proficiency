@@ -15,12 +15,12 @@ subprojects {
         mavenCentral()
     }
 
-    dependencies {
-        // https://mvnrepository.com/artifact/com.google.auto.service/auto-service
-        implementation("com.google.auto.service:auto-service:1.1.1")
-    }
-
     tasks.test {
         useJUnitPlatform()
     }
 }
+
+dependencies {
+    implementation(project(":annotation-processing-create-builder:annotation-user"))
+}
+
