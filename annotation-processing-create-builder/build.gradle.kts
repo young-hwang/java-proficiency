@@ -23,4 +23,3 @@ subprojects {
 dependencies {
     implementation(project(":annotation-processing-create-builder:annotation-user"))
 }
-
