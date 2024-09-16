@@ -168,6 +168,25 @@ Lock, ReentrantLock 을 사용하면 됨
 지정한 `condition`에 대기중인 스레드를 하나 깨움
 깨어난 스레드는 `condition`에서 빠져나옴
 
+### Object.notify() vs Condition.signal()
+
+**Object.notify()**
+
+대기 중인 스레드 중 임의의 하나를 선택하여 깨움
+스레드가 깨어나는 순서가 정의되지 않음(JVM 구현에 따라 다름) - 보통 먼저 들어온 스레드가 먼저 수행
+`synchronized` 블록 내에서 모니터 락을 가지고 있는 스레가 호출하여야 함
+
+**Condition.signal()**
+
+대기 중인 스레드 중 하나를 깨움
+일반적으로 FIFO 순서로 깨우지만 자바 버전 구현에 따라 달라질 수 있음
+`Condition`의 구현은 `Queue`구조를 사용하므로 FIFO로 깨움
+`ReentrantLock`을 가지는 스레드가 호출해야 함
+
+
+
+
+
 
 
 
