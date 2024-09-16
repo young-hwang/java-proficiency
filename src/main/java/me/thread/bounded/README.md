@@ -105,3 +105,69 @@ synchronized 임계 영역 안에서 Object.wait() 호출하면 스레드는 대
 둘은 한쌍으로 사용
 락을 획득한 객체의 대기 집합을 사용해야 함
 - synchronized 메소드를 적용하면 해당 인스턴스의 락을 사용
+
+## Object - wait, notify 한계
+
+Object.wait(), Object.notify() 방식은 스레드 대기 집합 하나에 생산자, 소비자 스레드를 모두 관리
+notify()를 호출 시 임의의 시레드가 선택
+
+| 예제처럼 큐에 데이터가 없는 상황에 소비자가 같은 소비자를 깨우는 비효율이 발생
+
+**같은 종류의 스레드를 깨울 때 비효율이 발생한다**
+
+생상자가 같은 생산자를 깨우거나, 소비자가 같은 소비자를 깨울 때 비효율이 발생할 수 있음
+생산자가 소비자를 깨우고, 반대로 소비자가 생산자를 깨운다면 비효율이 발생하지 않음
+
+### 스레드 기아(Thread starvation)
+
+notify() 의 또 다른 문제점으로 어떤 스레드가 깨어날지 알 수 없기 때문에 발생하는 스레드 기아 문제
+대기 상태의 스레드가 실행 순서를 얻지 못해 실행되지 않는 상황을 Thread starvation 이라 함
+
+
+## notifyAll()
+
+대기 집합(Wait Set)의 모든 스레드를 깨움
+락을 획득하지 못하면 BLOCKED 상태가 됨
+결과적으로 notifyAll() 을 사용해서 스레드 기아 문제는 막을 수 있지만, 비효율을 막지 못함
+
+## Lock Condition
+
+생산자가 생산자를 깨우고, 소비자가 소비자를 깨우는 비효율 문제 어떻게 해결하나?
+
+**해결 방안**
+
+핵심은 생산자 스레드는 데이터를 생성하고 대기중인 소비자 스레드에게 알려주어야 함
+반대로 소비자 스레드는 데이터를 소비하고 대기중인 생산자 스레드에게 알려주어야 함
+결국 생산자 스레드가 대기하는 대기 집합과 소비자 스레드가 대기하는 대기 집합을 둘로 나누면 됨
+생산자 스레드가 데이터를 생산하면 소비자 스레드가 대기하는 대기 집합에만 알려줌
+반대로 소비자 스레드가 데이터를 소비하면 생산자 스레드가 대기하는 대기 집합에만 알려줌
+
+그럼 대기 집합을 어떻게 분리할 것인가?
+Lock, ReentrantLock 을 사용하면 됨
+
+`synchronized`  대신에 `Lock lock = new ReentrantLock`을 사용
+
+**Condition**
+
+`Condition condition = lock.newCondition()`
+`Condition`은 `ReentrantLock`을 사용하는 스레드가 대기하는 스레드 대기 공간
+`lock.newCondition()` 메소드를 호출하면 스레드 대기 공간이 만들어짐
+
+참고로 `Object.wait`에서 사용한 대기 공간은 모든 객체 인스턴스가 내부에 기본으로 가지고 있음
+반면 `Lock(ReentrantLock)`을 사용하는 경우 스레드 대기 공간을 직접 만들어서 사용 필요
+
+**condition.await()**
+
+`Object.wait()`와 유사한 기능
+지정한 `condition`에 현재 스레드를 대기(WAITING) 상태로 보관
+이때 `ReentrantLock`에서 획득한 락을 반납하고 대기 상태로 `condition`에 보관
+
+**condition.signal()**
+
+`Object.notify()`와 유사한 기능
+지정한 `condition`에 대기중인 스레드를 하나 깨움
+깨어난 스레드는 `condition`에서 빠져나옴
+
+
+
+
