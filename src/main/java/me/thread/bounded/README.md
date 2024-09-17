@@ -183,10 +183,80 @@ Lock, ReentrantLock 을 사용하면 됨
 `Condition`의 구현은 `Queue`구조를 사용하므로 FIFO로 깨움
 `ReentrantLock`을 가지는 스레드가 호출해야 함
 
+### 스레드 대기
 
+**synchronized 대기**
 
+- 대기1: 락 획득 대기
+  - `BLOCKED` 상태로 락 획득 대기
+  - `synchronized`를 시작할 때 락이 없으면 대기
+  - 다른 스레드가 `synchronized`를 빠져 나갈 때 대기가 풀리며 락 획득 시도
+- 대기2: wait() 대기
+  - `WAITING` 상태로 대기
+  - `wait()`를 호출 했을 때 스레드 대기 집합에서 대기
+  - 다른 스레드가 `notify()`를 호출 했을 때 빠져나감
 
+자바의 모든 객체 인스턴스는 멀티스레드와 임계 영역을 다루기 위해 내부에 3가지 기본 요소를 가짐
+- 모니터 락
+- 락 대기 집합(모니터 락 대기 집합)
+- 스레드 대기 집합
 
+락 대기 집합이 1차 대기소, 스레드 대기 집합이 2차 대기소
+2차 대기소에 들어간 스레드는 2차, 1차 대기소를 모두 빠나와야 임계 영역을 수행할 수 있음
 
+이 3가지 요소는 맞물려 작동
+- `synchronized`를 사용한 임계 영역에 들어가려면 모니터 락이 필요
+- 모니터 락이 없으면 락 대기 상태로 들어가서 `BLOCKED` 상태로 락을 기다림
+- 모니터 락을 반납하면 락 대기 집합에 있는 스레드 중 하나가 락을 획득하고 `BLOCKED -> RUNNABLE` 상태가 됨
+- `wait()`를 호출해서 스레드 대기 집합에 들어가기 위해서는 모니터 락이 필요
+- 스레드 대기 집합에 들어가면 모니터 락 반납 필요
+- 스레드가 `notify()`를 호출하면 스레드 대기 집합에 있는 스레드 중 하나가 스레드 대기 집합을 빠져 나와 모니터 락 획득 시도
+  - 모니터 락 획득 시 임계 영역 수행
+  - 모니터 락 획득 못 할시 락 대기 집합에 들어가 `BLOCKED` 상태로 락을 대기
 
+### synchronized vs ReentrantLock 대기
 
+`synchronized`와 마찬가지로 `Lock(ReentrantLock)`도 2가지 단계의 대기 상태 존재
+같은 개념을 구현한 것으로 비슷
+
+### ReentrantLock 대기
+
+- 대기1: `ReentrantLock` 락 획득 대기
+  - `ReentrantLock`의 대기 큐에서 관리
+  - `WAITING` 상태로 락 획득 대기
+  - `lock.lock()`을 호출 했을 때 락이 없으면 대기
+  - 다른 스레드가 `lock.unlock()`을 호출 했을 때 대기가 풀리며 락 획득 시도, 락을 획득하면 대기 큐에서 빠져나감
+- 대기2: `await()` 대기
+  - `condition.await()`를 호출 했을 때, `condition`객체의 스레드 대기 공간에서 관리
+  - `WAITING` 상태로 대기
+  - 다른 스레드가 `condition.signal()`을 호출 했을 때 `condition` 객체의 스레드 대기 공간에서 빠져나감
+ 
+## BlockingQueue
+
+`BoundedQueue`를 스레드 관점에서 보면 큐가 특정 조건을 만족할 때까지 스레드의 작업을 차단(BLOCKING) 함
+- **데이터 추가 차단**: 큐가 가득차면 데이터 추가 작업(put())을 시도하는 스레드는 공각이 생길때 까지 차단
+- **데이터 획득 차단**: 큐가 비어 있으면 획득 작업(take())을 시도하는 스레드는 큐에 데이터가 들어올 때까지 차단
+
+그래서 스레드 관점에서 이 큐에 이름을 지어보면 `BlockingQueue`라는 이름이 적절
+
+자바는 생산 소비자 문제, 또는 한정된 버퍼라고 불리는 문제를 해결하기 위해 `java.util.concurrent.BlockingQueue`라는 인터페이스와 구현체들을 제공함
+
+```java
+package java.util.concurrent;
+
+public interface BlockingQueue<E> extends Queue<E> {
+    boolean add(E e);
+    boolean offer(E e);
+    void put(E e) throws InterruptedException;
+    boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException;
+  
+    E take() throws InterruptedException;
+    E poll(long timeout, TimeUnit unit) throws InterruptedException;
+    boolean remove(Object o);
+    
+    // ...
+}
+```
+
+- **데이터 추가 메소드**: `add()`, `offer()`, `put()`, `offer(timeout)`
+- 
