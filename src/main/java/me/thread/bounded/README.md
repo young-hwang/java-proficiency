@@ -259,4 +259,47 @@ public interface BlockingQueue<E> extends Queue<E> {
 ```
 
 - **데이터 추가 메소드**: `add()`, `offer()`, `put()`, `offer(timeout)`
-- 
+- **데이터 획득 메소드**: `take()`, `poll(timeout)`, `remove()`
+- `Queue` 상속을 받으므로 큐의 기능도 사용 가능
+
+### BlockingQueue의 대표 구현체
+
+- `ArrayBlockingQueue`: 배열 기반으로 구현되어 있고, 버퍼의 크기가 고정되어 있음
+- `LinkedBlockingQueue`: 링크 기반으로 구현되어 있고, 버퍼의 크를 고정할 수도, 무한하게 사용할 수도 있음
+
+| 참고: `Deque`용 동시성 자료 구조인 `BlockingDeque`도 존재
+
+```java
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class ArrayBlockingQueue {
+    final Object[] items;
+    int count;
+    ReentrantLock lock;
+    Condition notEmpty; // 소비자 스레드가 대기하는 condition
+    Condition notFull; // 생산자 스레드가 대기하는 condition
+  
+    public void put(E e) throws InterruptedException {
+        Objects.requireNonNull(e);
+        final ReentrantLock lock = this.lock;
+        lock.lockInterruptibly();
+        try {
+            while (count == items.length)
+                notFull.await();
+            enqueue(e);
+        } finally {
+            lock.unlock();
+        }
+    }
+    
+    private void enqueue(E e) {
+        items[putIndex] = e;
+        count++;
+        notEmpty.signal();
+    }
+}
+```
+
+우리가 구현한 기능과 차이점은 `lock.lock()`대신 `lock.lockInterruptibly()`를 사용한 점과 내부 자료 구조의 차이 정도임
+
