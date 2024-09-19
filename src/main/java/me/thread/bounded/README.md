@@ -19,6 +19,7 @@
 ```java
 public interface BoundedQueue {
     void put(String data);
+
     String take();
 }
 ```
@@ -28,7 +29,7 @@ public interface BoundedQueue {
 - take(): 버퍼에 보관된 데이터 가져감(소비자 스레드가 호출, 데이터 소비)
 
 ```java
-public class BoundedQueueV1 implements BoundedQueue{
+public class BoundedQueueV1 implements BoundedQueue {
     private final Queue<String> queue = new ArrayDeque<>();
     private final int max;
 
@@ -81,19 +82,19 @@ Object 는 모든 자바 객체의 부모이기 때문에 자바의 기본 기�
 **wait(), notify()**
 
 - Object.notify()
-  - 현재 스레드가 가진 락을 반납하고 대기(WAITING)
-  - 현재 스레드를 대기(WAITING) 상태로 전환. 현재 스레드가 synchronized 블록이나 메서드에서 락을 소유하고 있을 때만 호출할 수 있음
-  - 호출한 스레드는 락을 반납하고 다른 스레드가 해당 락을 획득할 수 있도록 함
-  - 대기 상태로 전환된 스레드는 다른 스레드가 notify() 또는 notifyAll() 을 호출할 때까지 대기 상태를 유지
+    - 현재 스레드가 가진 락을 반납하고 대기(WAITING)
+    - 현재 스레드를 대기(WAITING) 상태로 전환. 현재 스레드가 synchronized 블록이나 메서드에서 락을 소유하고 있을 때만 호출할 수 있음
+    - 호출한 스레드는 락을 반납하고 다른 스레드가 해당 락을 획득할 수 있도록 함
+    - 대기 상태로 전환된 스레드는 다른 스레드가 notify() 또는 notifyAll() 을 호출할 때까지 대기 상태를 유지
 - Object.notify()
-  - 대기 중인 스레드 중 하나를 깨움
-  - synchronized 블록이나 메소드에서 호출되어야 함
-  - 깨운 스레드는 락을 다시 획득할 기회를 얻게 되며 만약 대기 중인 스레드가 여러 개라면 그 중 하나만 깨움
+    - 대기 중인 스레드 중 하나를 깨움
+    - synchronized 블록이나 메소드에서 호출되어야 함
+    - 깨운 스레드는 락을 다시 획득할 기회를 얻게 되며 만약 대기 중인 스레드가 여러 개라면 그 중 하나만 깨움
 - Object.notifyAll()
-  - 대기 중인 모든 스레드를 깨움
-  - synchronized 블록이나 메소드에서 호출되어야 함
-  - 모든 대기중인 스레드가 락을 획득할 수 있는 기획를 얻게 됨
-  - 모든 스레드를 깨워야 할 필요가 있을 경우 유용
+    - 대기 중인 모든 스레드를 깨움
+    - synchronized 블록이나 메소드에서 호출되어야 함
+    - 모든 대기중인 스레드가 락을 획득할 수 있는 기획를 얻게 됨
+    - 모든 스레드를 깨워야 할 필요가 있을 경우 유용
 
 **스레드 대기 집합(wait set)**
 
@@ -104,6 +105,7 @@ synchronized 임계 영역 안에서 Object.wait() 호출하면 스레드는 대
 모든 객체는 락(모니터 락)과 대기 집합을 가짐
 둘은 한쌍으로 사용
 락을 획득한 객체의 대기 집합을 사용해야 함
+
 - synchronized 메소드를 적용하면 해당 인스턴스의 락을 사용
 
 ## Object - wait, notify 한계
@@ -122,7 +124,6 @@ notify()를 호출 시 임의의 시레드가 선택
 
 notify() 의 또 다른 문제점으로 어떤 스레드가 깨어날지 알 수 없기 때문에 발생하는 스레드 기아 문제
 대기 상태의 스레드가 실행 순서를 얻지 못해 실행되지 않는 상황을 Thread starvation 이라 함
-
 
 ## notifyAll()
 
@@ -188,15 +189,16 @@ Lock, ReentrantLock 을 사용하면 됨
 **synchronized 대기**
 
 - 대기1: 락 획득 대기
-  - `BLOCKED` 상태로 락 획득 대기
-  - `synchronized`를 시작할 때 락이 없으면 대기
-  - 다른 스레드가 `synchronized`를 빠져 나갈 때 대기가 풀리며 락 획득 시도
+    - `BLOCKED` 상태로 락 획득 대기
+    - `synchronized`를 시작할 때 락이 없으면 대기
+    - 다른 스레드가 `synchronized`를 빠져 나갈 때 대기가 풀리며 락 획득 시도
 - 대기2: wait() 대기
-  - `WAITING` 상태로 대기
-  - `wait()`를 호출 했을 때 스레드 대기 집합에서 대기
-  - 다른 스레드가 `notify()`를 호출 했을 때 빠져나감
+    - `WAITING` 상태로 대기
+    - `wait()`를 호출 했을 때 스레드 대기 집합에서 대기
+    - 다른 스레드가 `notify()`를 호출 했을 때 빠져나감
 
 자바의 모든 객체 인스턴스는 멀티스레드와 임계 영역을 다루기 위해 내부에 3가지 기본 요소를 가짐
+
 - 모니터 락
 - 락 대기 집합(모니터 락 대기 집합)
 - 스레드 대기 집합
@@ -205,14 +207,15 @@ Lock, ReentrantLock 을 사용하면 됨
 2차 대기소에 들어간 스레드는 2차, 1차 대기소를 모두 빠나와야 임계 영역을 수행할 수 있음
 
 이 3가지 요소는 맞물려 작동
+
 - `synchronized`를 사용한 임계 영역에 들어가려면 모니터 락이 필요
 - 모니터 락이 없으면 락 대기 상태로 들어가서 `BLOCKED` 상태로 락을 기다림
 - 모니터 락을 반납하면 락 대기 집합에 있는 스레드 중 하나가 락을 획득하고 `BLOCKED -> RUNNABLE` 상태가 됨
 - `wait()`를 호출해서 스레드 대기 집합에 들어가기 위해서는 모니터 락이 필요
 - 스레드 대기 집합에 들어가면 모니터 락 반납 필요
 - 스레드가 `notify()`를 호출하면 스레드 대기 집합에 있는 스레드 중 하나가 스레드 대기 집합을 빠져 나와 모니터 락 획득 시도
-  - 모니터 락 획득 시 임계 영역 수행
-  - 모니터 락 획득 못 할시 락 대기 집합에 들어가 `BLOCKED` 상태로 락을 대기
+    - 모니터 락 획득 시 임계 영역 수행
+    - 모니터 락 획득 못 할시 락 대기 집합에 들어가 `BLOCKED` 상태로 락을 대기
 
 ### synchronized vs ReentrantLock 대기
 
@@ -222,18 +225,19 @@ Lock, ReentrantLock 을 사용하면 됨
 ### ReentrantLock 대기
 
 - 대기1: `ReentrantLock` 락 획득 대기
-  - `ReentrantLock`의 대기 큐에서 관리
-  - `WAITING` 상태로 락 획득 대기
-  - `lock.lock()`을 호출 했을 때 락이 없으면 대기
-  - 다른 스레드가 `lock.unlock()`을 호출 했을 때 대기가 풀리며 락 획득 시도, 락을 획득하면 대기 큐에서 빠져나감
+    - `ReentrantLock`의 대기 큐에서 관리
+    - `WAITING` 상태로 락 획득 대기
+    - `lock.lock()`을 호출 했을 때 락이 없으면 대기
+    - 다른 스레드가 `lock.unlock()`을 호출 했을 때 대기가 풀리며 락 획득 시도, 락을 획득하면 대기 큐에서 빠져나감
 - 대기2: `await()` 대기
-  - `condition.await()`를 호출 했을 때, `condition`객체의 스레드 대기 공간에서 관리
-  - `WAITING` 상태로 대기
-  - 다른 스레드가 `condition.signal()`을 호출 했을 때 `condition` 객체의 스레드 대기 공간에서 빠져나감
- 
+    - `condition.await()`를 호출 했을 때, `condition`객체의 스레드 대기 공간에서 관리
+    - `WAITING` 상태로 대기
+    - 다른 스레드가 `condition.signal()`을 호출 했을 때 `condition` 객체의 스레드 대기 공간에서 빠져나감
+
 ## BlockingQueue
 
 `BoundedQueue`를 스레드 관점에서 보면 큐가 특정 조건을 만족할 때까지 스레드의 작업을 차단(BLOCKING) 함
+
 - **데이터 추가 차단**: 큐가 가득차면 데이터 추가 작업(put())을 시도하는 스레드는 공각이 생길때 까지 차단
 - **데이터 획득 차단**: 큐가 비어 있으면 획득 작업(take())을 시도하는 스레드는 큐에 데이터가 들어올 때까지 차단
 
@@ -246,14 +250,19 @@ package java.util.concurrent;
 
 public interface BlockingQueue<E> extends Queue<E> {
     boolean add(E e);
+
     boolean offer(E e);
+
     void put(E e) throws InterruptedException;
+
     boolean offer(E e, long timeout, TimeUnit unit) throws InterruptedException;
-  
+
     E take() throws InterruptedException;
+
     E poll(long timeout, TimeUnit unit) throws InterruptedException;
+
     boolean remove(Object o);
-    
+
     // ...
 }
 ```
@@ -279,7 +288,7 @@ public class ArrayBlockingQueue {
     ReentrantLock lock;
     Condition notEmpty; // 소비자 스레드가 대기하는 condition
     Condition notFull; // 생산자 스레드가 대기하는 condition
-  
+
     public void put(E e) throws InterruptedException {
         Objects.requireNonNull(e);
         final ReentrantLock lock = this.lock;
@@ -292,7 +301,7 @@ public class ArrayBlockingQueue {
             lock.unlock();
         }
     }
-    
+
     private void enqueue(E e) {
         items[putIndex] = e;
         count++;
@@ -302,4 +311,51 @@ public class ArrayBlockingQueue {
 ```
 
 우리가 구현한 기능과 차이점은 `lock.lock()`대신 `lock.lockInterruptibly()`를 사용한 점과 내부 자료 구조의 차이 정도임
+
+## BlockingQueue - 기능 설명
+
+실무에서 멀티스레드를 사용할 때는 응답성이 중요
+대기 상태에 있어도 고객이 중지 요청을 하거나 너무 오래 대기한 경우 포기하고 빠져나갈 수 있는 방법이 필요
+e.g. 생산자가 무언가 데이터를 생산하는 과정에 버퍼가 빠지지 않아서 너무 오래 대기해야 한다면 무한정 기다리는 것 보다는 작업을 포기하고 "시스템에 문제가 있습니다" 라고 하는 것이 더 나은 선택
+
+큐가 가득 찼을 때 4가지 선택지
+
+- 예외를 던짐, 예외를 받아서 처리
+- 대기하지 않음, 즉시 `false` 반환
+- 대기
+- 특정 시간 만큼 대기
+
+**BlockingQueue의 다양한 기능 - 공식 API 문서**
+
+| Operation  | Throws Exception | Special Value | Blocks | Times Out             |
+|:----------|:----------------|:-------------|:------|:----------------------|
+| Insert(추가) |      add(e)      |   offer(e)    | put(e) | offer(e, time, unit)  |
+| Remove(제거)    |   remove()    | poll() |        take()        | poll(time, unit)      |
+| Examine(관찰)    |   element()   | peek() |    not applicable    | not applicable        |
+
+**Throws Exception - 대기 시 예외**
+
+- add(e): 지정된 요소를 큐에 추가하며 큐가 가득차면 `IllegalStateException` 예외를 던짐
+- remove(): 큐에서 요소를 제거하며 반환, 큐가 비어 있으면 `NoSuchElementException` 예외를 던짐
+- element(): 큐의 머리 요소를 반환하지만, 요소를 큐에서 제거하지 않음. 큐가 비어 있으면 `NoSuchElementException` 예외를 던짐
+ 
+**Special Value - 대기 시 즉시 반환**
+
+- offer(e): 지정된 요소를 큐에 추가하려고 시도, 큐가 가득하면 `false`를 반환
+- poll(): 큐에서 요소를 제거하고 반환, 큐가 비어 있으면 `null`를 반환
+- peek(): 큐의 머리 요소를 반환, 요소를 큐에서 제거하지 않음, 큐가 비었으면 `null` 반환
+ 
+**Blocks - 대기**
+
+- put(e): 지정된 요소를 큐에 추가할 때까지 대기, 큐가 가득차면 공간이 생길 때까지 대기
+- take(): 큐에서 요소를 제거하고 반환, 큐가 비어 있으면 요소가 준비될 때까지 대기
+- Examine(조회): 해당 사항 없음
+
+**Times Out - 시간 대기**
+
+- offer(e, time, unit): 지정된 요소를 큐에 추가, 지정된 시간 동안 큐가 비워지기를 기다리나 시간 초과 시 `false` 반환
+- poll(time, unit): 큐에서 요소를 제거하고 반환, 큐에 요소가 없으면 지정된 시간 동안 요소가 준비되지를 기다리다가 시간 초과 시 `null` 반환
+- Examine(조회): 해당 사항 없음
+
+참고로 `BlockingQueue`의 모든 대기, 시간 대기 메소드는 인터럽트를 제공
 
