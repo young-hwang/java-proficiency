@@ -1,4 +1,4 @@
-package me.thread.atomicoperation;
+package me.thread.cas.atomicoperation;
 
 public class SynchronizedInteger implements IncrementInteger {
     private int value;

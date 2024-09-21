@@ -1,4 +1,4 @@
-package me.thread.atomicoperation;
+package me.thread.cas.atomicoperation;
 
 public interface IncrementInteger {
     void increment();

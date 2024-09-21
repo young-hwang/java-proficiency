@@ -1,10 +1,6 @@
-package me.thread.atomicoperation;
-
-import java.util.ArrayList;
-import java.util.List;
+package me.thread.cas.atomicoperation;
 
 import static me.util.MyLogger.log;
-import static me.util.ThreadUtils.sleep;
 
 public class IncrementThreadPerformanceMain {
     public static final Long COUNT = 100_000_000L;

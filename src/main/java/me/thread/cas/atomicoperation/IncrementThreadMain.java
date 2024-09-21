@@ -1,8 +1,7 @@
-package me.thread.atomicoperation;
+package me.thread.cas.atomicoperation;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static me.util.MyLogger.log;
 import static me.util.ThreadUtils.sleep;

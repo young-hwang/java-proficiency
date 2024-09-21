@@ -1,7 +1,7 @@
-package me.thread.atomicoperation;
+package me.thread.cas.atomicoperation;
 
-public class VolatileInteger implements IncrementInteger {
-    private volatile int value;
+public class BasicInteger implements IncrementInteger {
+    private int value;
 
     @Override
     public void increment() {
