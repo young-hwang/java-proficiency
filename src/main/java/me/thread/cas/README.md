@@ -1,11 +1,15 @@
-# CAS(Compare And Swap) 연산
+# CAS(Compare And Swap)
 
 ## 락 기반 방식의 문제점
 
 `SynchronizedInteger`와 같은 클래스는 데이터를 보호하기 위해 락을 사용
+
 락은 `synchronized`, `Lock(ReentrantLock)`등을 사용하는 것을 의미
+
 락은 특정 자원을 보호하기 위해 스레드가 해당 자원에 대한 접근하는 것을 제한
+
 락이 걸려 있는 동안 다른 스레드는 해당 자원에 접근할 수 없고, 락이 해제될 때까지 대기해야 함
+
 락 기반 접근에서는 락을 획득하고 해제하는 데 시간이 소요됨
 
 락을 사용하는 예
@@ -15,11 +19,13 @@
 - 락을 반납
 
 락을 획득하고 반납하는 과정을 반복
+
 직관적이지만 상대적으로 무거운 방식
 
-## CAS
+## CAS 연산
 
 락을 걸지 않고 원작적인 연산을 수행하는 방법으로 이를 CAS(Compare And Swap, Compare And Set) 연산이라 함
+
 락을 사용하지 않으므로 락 프리(lock free) 기법이라 함
 
 > **참고**
@@ -71,15 +77,20 @@ stateDiagram
 ### CPU 하드웨어 지원
 
 `CAS`연산은 원자적이지 않은 두개 연산을 CPU 하드웨어 차원에서 특별하게 하나의 원자적인 연산으로 묶어서 제공하는 기능
+
 소프트웨어가 제공하는 것이 아닌 하드웨어에서 제공
+
 현대 CPU 들은 CAS 연산을 위한 명령어를 제공
 
 CPU는 다음 두 과정을 묶어 하나의 원자적 명령어로 만듬
+
 따라서 다른 스레드가 개입할 수 없음
+
 1. x001 값을 확인
 2. 읽은 값이 0이면 1로 변경
 
 CPU는 두 과정을 묶어서 하나 원자적인 명령어로 만들기 위해 1번과 2번 사이에 다른 스레드가 x001 값을 변경 못하게 막음
+
 CPU 입장에서 1번과 2번의 과정은 찰나의 순간(성능에 큰영향을 끼치지 않음)
 
 ```mermaid
@@ -102,4 +113,67 @@ stateDiagram
 - CAS 연산으로 값이 성공적으로 변경되어 `true` 반환
 
 ### CAS 실패 케이스
+
+```mermaid
+stateDiagram
+  direction LR
+  s1: CPU Core
+  s2: Main Memory
+  s3: x0001, value = 1
+  s4: 원자적 연산
+  [*] --> Thread
+  Thread --> s1 : 0. CAS(x001, 0, 1)
+  state s4 {
+    state s2 {
+      s3
+    }
+  }
+  s1 --> s2 : 1. x001 확인
+  s1 --> s3 : 2. 0이면 1로 변경
+```
+
+- `CAS` 연산은 메모리 있는 기대값이 원하는 값이라면 변경
+- `AtomicInteger` 내부에 있는 `value` 값이 0이라면 1로 변경
+- 현재 `value` 값이 기대값 0이 아닌 1이므로 아무 변경을 하지 않음
+
+```mermaid
+stateDiagram
+  direction LR
+  s1: CPU Core
+  s2: Main Memory
+  s3: x0001, value = 1
+  s4: 원자적 연산
+  [*] --> Thread
+  Thread --> s1 : false
+  state s4 {
+    state s2 {
+      s3
+    }
+  }
+```
+
+- CAS 연산 실패하여 `false` 반환
+
+## CAS 연산 2
+
+어떤값을 증가시키는 `value++` 연산은 원자적 연산이 아님
+
+`i = i + 1`은 다음의 순서로 나누어 실행
+
+1. 오른쪽에 있는 `i`의 값을 읽음, `i`의 값은 0
+2. 읽은 0에 1을 더해서 1을 만듬
+3. 더한 1을 왼쪽의 `i` 변수에 대입
+
+1번과 2번 사이에 다른 스레드가 `i`의 값을 변경할 수 있기에 문제가 될 수 있음
+
+`value++` 연산을 여러 스레드에서 사용한다면 락을 건 후 값을 증가해야 함
+
+`AtomicInteger`가 제공하는 `incrementAngGet()` 메소드가 어떻게 CAS 연산을 활용하여 락 없이 만들어 졌는지 확인
+
+`CAS` 연산을 사용하면 여러 스레드가 같은 값을 사용하는 상황에서도 락을 걸지 않고, 안전하게 값을 증가할 수 있음
+
+- `getValue = atomicIntger.get()`을 사용해서 `value` 값을 읽음
+- `compareAndSet(getValue, getValue + 1)`을 사용해서, 방금 읽은 `value` 값이 메모리의 `value`와 같다면 `value` 값을 하나 증가
+- `CAS` 연산이 성공한다면 `true`를 반환하고 `do~while`문을 빠져나옴
+- `CAS` 연산이 실패한다면 `false`를 반환하고 `do~while`문을 다시 시작
 
