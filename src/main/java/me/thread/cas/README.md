@@ -177,3 +177,87 @@ stateDiagram
 - `CAS` 연산이 성공한다면 `true`를 반환하고 `do~while`문을 빠져나옴
 - `CAS` 연산이 실패한다면 `false`를 반환하고 `do~while`문을 다시 시작
 
+## CAS 연산 3
+
+멀티스레드를 사용해서 중간에 다른 스레드가 먼저 값을 증가시켜 버리는 경우
+
+CAS 연산이 실패하는 경우를 알아보고 이 경우에도 정상적으로 값을 증기 시킬 있는지 살펴봄
+
+```java
+public class CasMainV3 {
+  private static int THREAD_COUNT = 2;
+
+  public static void main(String[] args) throws InterruptedException {
+    AtomicInteger atomicInteger = new AtomicInteger(0);
+    System.out.println("Start value = " + atomicInteger.get());
+
+    Runnable runnable = () -> {
+      incrementAndGet(atomicInteger);
+    };
+
+    List<Thread> threads = new ArrayList<>();
+    for (int i = 0; i < THREAD_COUNT; i++) {
+      Thread thread = new Thread(runnable);
+      threads.add(thread);
+      thread.start();
+    }
+
+    for (Thread thread : threads) {
+      thread.join();
+    }
+
+    int result = atomicInteger.get();
+    System.out.println("result = " + result);
+  }
+
+  private static int incrementAndGet(AtomicInteger atomicInteger) {
+    int getValue;
+    boolean result;
+    do {
+      getValue = atomicInteger.get();
+      log("getValue: " + getValue);
+      result = atomicInteger.compareAndSet(getValue, getValue + 1);
+      log("result: " + result);
+    } while (!result) ;
+    return getValue + 1;
+  }
+}
+```
+
+- 2개의 스레드가 `incrementAndGet()`를 호출해서 `AtomicInteger` 내부의 `value` 값을 동시에 하나씩 증가
+
+### 정리
+
+`AtomicInteger`가 제공하는 `incrementAndGet()` 코드로 앞서 우리가 직접 작성한 `incrementAndGet()` 코드와 똑같이 CAS를 활용하여 작성
+
+CAS를 사용하면 락을 사용하지 않고, 다른 스레드가 값을 먼저 증가해서 문제가 발생하는 경우 루프를 돌며 재시도 하는 방식
+
+- 현재 변수의 값을 읽음
+- 변수의 값을 1 증가 시킬 때, 읽은 값과 비교하여 동일한지 확인(CAS 연산)
+- 동일하다면 증가된 값을 변수에 저장하고 종료
+- 동일하지 않다면 다른 스레드가 값을 변경한 것으로 다시 처음부터 반복
+ 
+장점 : 스레드가 락을 획득하기 위해 대기하지 않기 때문에 대기 시간과 오버헤드가 줄어드는 장점
+
+단점 : CAS는 자주 실패하고 재시도해야 하므로 성능 저하가 발생할 수 있음. 반복문을 계속 돌기 때문에 CPU 자원을 많이 소모
+
+**CAS(Compare-And-Swap)와 락(Lock) 방식의 비교**
+
+**락(Lock) 방식**
+- 비관적(pessimistic) 접근법
+- 데이터에 접근하기 전에 항상 락을 획득
+- 다른 스레드의 접근을 막음
+- "다른 스레드가 방해할 것이다"고 가정
+
+**CAS(Compare-And-Swap) 방식
+- 낙관적(optimistic) 접근법
+- 락을 사용하지 않고 데이터에 바로 접근
+- 충돌이 발생하면 그때 재시도
+- "대부분의 경우 충돌이 없을 것이다."라고 가정
+
+충돌이 많이 발생하지 않는 연산은 어떤것인가? 언제 CAS 연산을 사용하는가?
+
+간단한 CPU 연산은 너무 빨리 처리되기 때문에 충돌이 자주 발생하지 않음
+
+충돌이 발생하기도 전에 이미 연산을 완료하는 경우가 더 많음
+
