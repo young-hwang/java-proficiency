@@ -17,7 +17,7 @@ import javax.tools.JavaFileObject;
 import com.google.auto.service.AutoService;
 
 @SupportedAnnotationTypes("me.processor.BuilderProperty")
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 @AutoService(Processor.class)
 public class BuilderProcessor extends AbstractProcessor {
 

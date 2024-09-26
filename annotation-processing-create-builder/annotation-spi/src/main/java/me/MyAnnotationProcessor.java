@@ -15,7 +15,7 @@ import java.util.Set;
  * 컴파일 시 annotation의 value와 count 값을 출력
  */
 @SupportedAnnotationTypes("me.MyCustomAnnotation")
-@SupportedSourceVersion(SourceVersion.RELEASE_21)
+@SupportedSourceVersion(SourceVersion.RELEASE_17)
 public class MyAnnotationProcessor extends AbstractProcessor {
     @Override
     public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {
