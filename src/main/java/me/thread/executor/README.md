@@ -285,3 +285,95 @@ graph TB
 - `corePoolSize=2`, `maximumPoolSize=2`를 사용해서 기본 스레드와 최대 스레드 수를 맞추었음, 따라서 풀에서 관리되는 스레드는 2개로 고정
 - 작업을 보관할 블로킹 큐의 구현체로 `LinkedBlockingQueue`를 사용, 이 블로킹 큐는 작업을 무한대로 저장할 수 있음
 
+# Future1 - 시작
+
+## Runnable & Callable 
+
+```java
+package java.lang;
+
+public interface Runnable {
+    void run();
+}
+```
+
+- `Runnable`의 `run()`은 반환 타입이 `void`, 따라서 값을 반환할 수 없음
+- 예외가 선언되어 있지 않음, 따라서 해당 인터페이스 구현하는 모든 메소드는 체크 예외를 던질 수 없음
+  - 자식은 부모의 예외 범위를 넘어설 수 없음, 부모에 예외가 선언되어 있지 않으므로 예외를 던질 수 없음
+  - 런타입(비체크) 예외는 제외
+
+```java
+package java.util.concurrent;
+
+public interface Callable<V> {
+    V call() throws Exception;
+}
+```
+
+- `java.util.concurrent`에서 제공되는 기능
+- `Callable`의 `call()`은 반환 타입이 제너릭 `V`로 값을 반환할 수 있음
+- `throws Exception` 예외가 선언되어 있음, 따라서 해당 인터페이스를 구현하는 모든 메소드는 체크 예외와 그 하위 예외를 모두 던질 수 있음
+
+`MyCallable` 구현 부분
+
+- 숫자를 반환하므로 반환할 제네릭 타입을 `<Integer>`로 선언
+- 구현은 `Runnable` 코드와 비슷, 차이는 결과를 반환한다는 점, 결과를 보관할 변도의 필드를 만들지 않아도 됨
+
+### submit()
+
+```java
+<T> Future<T> submit(Callable<V> task); // 인터페이스 정의
+```
+
+`ExecutorService`가 제공하는 `submit()`을 통해 `Callable`을 작업으로 전달할 수 있음
+
+```java
+Future<Integer> future = es.submit(new MyCallable());
+```
+
+`MyCallable` 인스턴스가 블로킹 큐에 전달되고, 스레드 풀의 스레드 중 하나가 이 작업을 실행할 것임
+
+이때 작업의 처리 결과는 직접 반환하는 것이 아니라 `Future`라는 특별한 인터페이스를 통해 반환
+
+```java
+Integer result = future.get();
+```
+
+`future.get()`을 호출하며 `MyCallable`의 `call()`이 반환한 결과를 받을 수 있음
+
+> 참고: `Future.get()`은 `InterruptedException`, `ExecutionException` 체크 예외를 던짐
+
+### Executor 프레임워크의 강점
+
+요청 스레드가 결과를 받아야 하는 상황이면, `Callable`을 사용하는 방식은 `Runnable`을 사용하는 방식보다 훨씬 편리함
+
+코드만 보면 복잡한 멀티스레드를 사용한다는 느낌보다 단순한 싱글 스레드 방식으로 개발한다는 느낌이 듬
+
+내가 스레드를 생성하거나 `join()`으로 스레드를 제어하거나 한 코드는 전혀 없음, `Thread`라는 코드도 없음
+
+단순하게 `ExecutorService`에 필요한 작업을 요청하고 결과를 받아서 쓰면됨
+
+복잡한 멀티스레드를 매우 편리하게 사용할 수 있는 것이 바로 `Executor` 프레임워크의 강점
+
+하지만 기반 원리를 제대로 이해해야 문제없이 사용할 수 있음
+
+여기에서 잘 생각해 보면 한가지 애매한 상황이 존재
+
+`future.get()`을 호출하는 요청 스레드(main)는 `future.get()`을 호출 했을 때 2가지 상황으로 나뉘게 됨
+
+- `MyCallable` 작업을 처리하는 스레드 풀의 스레드가 작업을 완료
+- `MyCallable` 작업을 처리하는 스레드 풀의 스레드가 작업을 완료하지 못함
+
+`future.get()`을 호출했을 때 스레드 풀의 스레드가 작업을 완료했다면 반환 받을 결과가 있을 것이나 아직 작업을 처리중 이라면 어떻게 하나?
+
+# Future2 - 분석
+
+`Future`는 번역하면 미래라는 뜻, 즉 미래의 결과를 받을 수 있는 객체라는 의미
+
+누구의 미래의 결과를 말하는 것일까?
+
+```java
+Future<Integer> future = es.submit(new MyCallable());
+```
+
+
