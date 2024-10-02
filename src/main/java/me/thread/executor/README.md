@@ -376,4 +376,173 @@ Integer result = future.get();
 Future<Integer> future = es.submit(new MyCallable());
 ```
 
+- `submit()`의 호출로 `MyCallable`의 인스턴스를 전달
+- 이때 `submit()`은 MyCallable.call()이 반환하는 무작위 숫자 대신 `Future`를 반환
+- `MyCallable`이 실행되어 즉시 결과를 반환하는 것이 불가능, `MyCallable`은 즉시 실행되는 것이 아님, 스레드 풀의 스레드가 미래의 시점에 코드를 실행
+- `MyCallable.call()` 메소드는 호출 스레드가 실행하는 것도 아니고, 스레드 풀의 다른 스레드가 실행하기에 언제 결과를 반환할지 알 수 없음
+- 따라서 즉시 결과를 받는 것은 불가능, 따라서 `es.submit()`은 `MyCallable` 결과를 반환하는 대신 `MyCallable`의 결과를 나중에 받을 수 있는 `Future` 객체를 대신 제공
+- `Future`는 전달한 작업의 미래, 이 객체를 통해 전달한 작업의 미래 결과를 받을 수 있음
+
+`Future`는 전달한 작업의 미래 결과를 담고 있다고 보면됨
+
+`Future`가 어떻게 동작하는지 살펴보자
+
+```java
+public class CallableMainV2 {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    ExecutorService executorService = Executors.newFixedThreadPool(1);
+    MyCallable myCallable = new MyCallable();
+    log("submit() 호출");
+    Future<Integer> future = executorService.submit(myCallable);
+    log("future 즉시 반환, future = " + future);
+
+    log("future.get() [블로킹] 메소드 호출 시작 -> main 스레드 WAITING");
+    Integer value = future.get();
+    log("future.get() [블로킹] 메소드 호출 완료 -> main 스레드 RUNNABLE");
+    log("result value = " + value);
+    log("future 완료, future = " + future);
+    executorService.close();
+  }
+
+  static class MyCallable implements Callable<Integer> {
+    @Override
+    public Integer call() {
+      log("Runnable 시작");
+      sleep(2000);
+      int value = new Random().nextInt(10);
+      log("create value = " + value);
+      log("Runnable 완료");
+      return value;
+    }
+  }
+}
+```
+
+**실행 결과 분석**
+
+- `MyCallable` 인스턴스를 편의상 `taskA`라고 함
+- 편의상 스레드풀에 스레드가 1개 있다고 가정
+
+```java
+es.submit(new MyCallable())
+```
+
+- `submit()`을 호출해서 `ExecutorService`에 `taskA`를 전달
+
+**Future의 생성**
+
+- 요청 스레드는 `es.submit(taskA)`를 호출하고 있는 중
+- `ExecutorService`는 전달한 `taskA`의 미래를 알 수 있는 `Future` 객체를 생성
+  - `Future`는 인터페이스, 실제 구현체는 `FutureTask`
+- `Future`객체 안에 `taskA`의 인스턴스를 보관
+- `Future`는 내부에 `taskA` 작업의 완료 여부와 작업의 결과를 가짐
+
+- `submit()`을 호출할 경우 `Future`가 만들어지고, 전달한 작업인 `taskA`가 바로 블로킹 큐에 담기는 것이 아니라, `taskA`를 감싸고 있는 `Future`가 대신 블로킹 큐에 담김
+
+```java
+Future<Integer> future = es.submit(new MyCallable);
+```
+
+- `Future`는 내부에 작업의 완료 여부와 작업의 결과 값을 가짐, 작업이 완료되지 않았기에 결과 없음
+  - 로그를 보면 `Future`의 구현체는 `FutureTask`임
+  - `Future`의 상태는 "Not completed(미완료)"이고, 연관된 작업은 전달한 `taskA(MyCallable 인스턴스)` 임
+- 중요한 핵심은 작업을 전달할 때 생성된 `Future`는 즉시 반환된다는 것
+
+- futere의 즉시 반확이라는 로그와, 바로 그 다음인 `future.get()`을 호출하는 로그의 시간을 보면 거의 바로 연속해서 실행되는 것을 확인
+- 생성한 `Future`를 즉시 반환하기 때문에 요청 스레드는 대기하지 않고, 자유롭게 본인의 다음 코드를 호출
+  - 이것은 마치 `Thread.start()`를 호출한 것과 비슷, `Thread.start()`를 호출하면 스레드의 작업 코드가 별도의 스레드에서 실행됨(요청 스레드를 대기하지 않고, 즉시 다음 코드를 호출)
+
+- 큐에 들어있는 `Future[taskA]`를 꺼내서 스레드 풀의 스레드1이 작업을 시작
+- 참고로 `Future`의 구현체인 `FutureTask`는 Runnable 인터페이스도 함께 구현하고 있음
+- 스레드1은 `FutureTask`의 `run()` 메소드를 수행
+- `run()` 메소드가 `taskA`의 `call()` 메소드를 호출하고 그 결과를 받아서 처리
+  - `FutureTask.run()` -> `MyCallable.call()`
+
+---
+
+**스레드1**
+
+- 스레드1은 `taskA`의 작업을 아직 처리 중, 완료하지 않음
+
+**요청 스레드**
+
+- 요청 스레드는 `Future` 인스턴스의 참조를 가짐
+- 언제든지 본인이 필요할 때 `Future.get()`을 호출해서 `taskA` 작업의 미래 결과를 받을 수 있음
+- 요청 스레드는 작업의 결과가 필요해서 `Future.get()`을 호출
+  - `Future`에는 완료 상태가 존재, `taskA`의 작업이 완료되면 `Future`의 상태도 완료로 변경
+  - 여기서 `taskA`의 작업이 아직 완료되지 않았다면 `Future`도 완료 상태가 아님
+- 요청 스레드가 `Fugure.get()`을 호출하면 `Future`가 완료 상태가 될 때까지 대기, 이때 요청 스레드의 상태는 `RUNNABLE`->`WAITING`이 됨
+
+`Future.get()`을 호출했을 때 
+
+- **Future가 완료 상태**: `Future`가 완료 상태면 `Future`에 결과도 포함되어 있음, 이 경우 요청 스레드는 대기하지 않고, 값을 즉시 반환받음
+- **Future가 완료 상태가 아님**: `taskA`가 아직 수행되지 않았거나 또는 수행 중이라는 뜻, 이때는 어쩔수 없이 요청 스레드가 결과를 받기 위해 대기해야함, 요청 스레드가 마치 락을 얻을 때처럼, 결과를 얻기 위해 대기, 이처럼 스레드가 어떤 결과를 얻기 위해 대기하는 것을 블로킹(Blocking)이라 함
+ 
+> 참고: 블로킹 메소드
+> `Thread.join()`, `Future.get()`과 같은 메서드는 스레드가 작업을 바로 수행하지 않고, 다른 작업이 완료될 때까지 기다리게 하는 메소드임
+> 이러한 메소드를 호출하면 호출한 스레드는 지정된 작업이 완료될 때까지 블록(대기)되어 다른 작업을 수행할 수 없음
+
+**요청 스레드**
+
+- 대기(WAITING) 상태로 `Future.get()`을 호출하고 대기중
+
+**스레드1**
+
+- `taskA` 작업을 완료함
+- `Future`에 `taskA`의 반환결과를 담음
+- `Future`의 상태를 완료로 변경
+- 요청 스레드를 깨움, 요청 스레드는 `WAITING` -> `RUNNABLE` 상태로 변경
+
+---
+
+- `Future`의 인스턴스인 `FutureTask`를 보면 "Completed normally"로 정상 완료된 것을 확인할 수 있음
+
+### 정리
+
+```java
+Future<Integer> future = es.submit(new MyCallable());
+```
+
+- `Future`는 작업의 미래 결과를 받을 수 있는 객체
+- `submit()` 호출시 `future`는 즉시 반환, 덕분에 요청 스레드는 블로킹 되지 않고 필요한 작업을 할 수 있음
+
+```java
+Integer result = future.get();
+```
+- 작업의 결과가 필요하면 `Fugure.get()`을 호출하면 됨
+- **Future가 완료 상태**: `Future`가 완료 상태면 `Future`에 결과도 포함되어 있음, 이 경우 요청 스레드는 대기하지 않고, 값을 즉시 반환받음
+- **Future가 완료 상태가 아님**: `taskA`가 아직 수행되지 않았거나 또는 수행 중이라는 뜻, 이때는 어쩔수 없이 요청 스레드가 결과를 받기 위해 대기해야함, 요청 스레드가 마치 락을 얻을 때처럼, 결과를 얻기 위해 대기, 이처럼 스레드가 어떤 결과를 얻기 위해 대기하는 것을 블로킹(Blocking)이라 함
+
+### Future가 필요한 이유?
+
+의문사항?
+
+두 코드를 비교
+
+**Future를 반환하는 코드**
+
+```java
+Future<Integer> future = es.submit(new MyCallable()); // 여기는 블로킹이 아님
+future.get();   // 여기서 블로킹
+```
+
+`ExecutorService`를 설계할 때 지금처럼 복잡하게 `Future`를 반환하는게 아니라 다음과 같이 결과를 직접 받아서 설계하는게 더 단순하고 좋지 않을까?
+
+**결과를 직접 반환하는 코드(가정)**
+
+```java
+Integer result = es.submit(new MyCallable());
+```
+
+물론 이렇게 설계하면 `submit()`을 호출할 때, 작업의 결과가 언제 나올지 알 수 없음
+
+따라서 작업의 결과를 받을 때 까지 요청 스레드는 대기해야 함
+
+이것을 `Future`를 사용할 때도 마찬가지임
+
+`Future`만 즉시 반환 받을 뿐이지, 작업의 결과를 얻으려면 결국 `Future.get()`을 호출해야 함
+
+그리고 이 시점에는 작업의 결과를 받을 때 까지 대기해야함
+
+`Future` 개념이 왜 필요한지 다음 예제를 보면 이해가능함
 
