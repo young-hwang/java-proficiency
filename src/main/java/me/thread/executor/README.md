@@ -546,3 +546,113 @@ Integer result = es.submit(new MyCallable());
 
 `Future` 개념이 왜 필요한지 다음 예제를 보면 이해가능함
 
+# Future3 - 분석
+
+이번 예제는 숫자를 나누어 더하는 기능을 멀티스레드로 수행
+
+1~100까지 더하는 경우를 스레드를 사용해서 1~50, 51~100으로 나누어 처리
+
+- 스레드1: 1~50까지 더함
+- 스레드1: 51~100까지 더함
+
+## SumTask - Runnable
+
+`ExecutorService` 없이 `Runnable`과 순수 스레드로 구성
+
+```java
+public class SumTaskMainV1 {
+  public static void main(String[] args) throws InterruptedException {
+    SumTask task1 = new SumTask(1, 50);
+    SumTask task2 = new SumTask(51, 100);
+
+    Thread thread1 = new Thread(task1, "thread-1");
+    Thread thread2 = new Thread(task2, "thread-2");
+
+    thread1.start();
+    thread2.start();
+
+    // 스레드가 종료될 때 까지 대기
+    log("join() - main 스레드가 thread-1, thread-2 종료까지 대기");
+    thread1.join();
+    thread2.join();
+    log("main 스레드 대기 완료");
+
+    log("task1.sum = " + task1.sum);
+    log("task2.sum = " + task2.sum);
+    log("task1 + task2 = " + (task1.sum + task2.sum));
+    log("enc");
+  }
+
+  private static class SumTask implements Runnable {
+    private int first;
+    private int last;
+    private int sum = 0;
+
+    public SumTask(int first, int last) {
+      this.first = first;
+      this.last = last;
+    }
+
+    @Override
+    public void run() {
+      log("작업 시작");
+      for (int i = first; i <= last; i++) {
+        sum += i;
+      }
+      log("작업 완료 = " + sum);
+    }
+  }
+}
+```
+
+```java
+public class SumTaskMainV2 {
+  public static void main(String[] args) throws ExecutionException, InterruptedException {
+    SumTask task1 = new SumTask(1, 50);
+    SumTask task2 = new SumTask(51, 100);
+
+    ExecutorService es = Executors.newFixedThreadPool(2);
+    Future<Integer> future1 = es.submit(task1);
+    Future<Integer> future2 = es.submit(task2);
+
+    Integer result1 = future1.get();
+    Integer result2 = future2.get();
+
+    log("task1.result=" + result1);
+    log("task2.result=" + result2);
+    log("task1 + task2 = " + (result1 + result2));
+    log("end");
+    es.close();
+  }
+
+  static class SumTask implements Callable<Integer> {
+    private int start;
+    private int end;
+
+    public SumTask(int start, int end) {
+      this.start = start;
+      this.end = end;
+    }
+
+    @Override
+    public Integer call() throws Exception {
+      log("작업 시작");
+      int sum = 0;
+      for (int i = start; i <= end; i++) {
+        sum += i;
+      }
+      log("작업 완료, result = " + sum);
+      return sum;
+    }
+  }
+}
+```
+
+`ExecutorService`와 `Callable`을 사용한 덕분에 훨씬 직관적이고 깔끔한 코드 작성
+
+특히 작업의 결과를 반환하고 요청 스레드에서 그 결과를 바로 받아서 처리하는 부분이 직관적
+
+스레드를 생성하고 `Thread.join()`과 같은 스레드를 관리하는 코드도 모두 제거할 수 있음
+
+`Callable.call()`은 `throws InterruptedException`과 같은 체크 예외도 던질 수 있음
+
