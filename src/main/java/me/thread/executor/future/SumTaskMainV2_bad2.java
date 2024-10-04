@@ -9,18 +9,16 @@ import java.util.concurrent.Future;
 import static me.util.MyLogger.log;
 import static me.util.ThreadUtils.sleep;
 
-public class SumTaskMainV2 {
+public class SumTaskMainV2_bad2 {
     public static void main(String[] args) throws ExecutionException, InterruptedException {
         log("start");
         SumTask task1 = new SumTask(1, 50);
         SumTask task2 = new SumTask(51, 100);
 
         ExecutorService es = Executors.newFixedThreadPool(2);
-        Future<Integer> future1 = es.submit(task1);
-        Future<Integer> future2 = es.submit(task2);
 
-        Integer result1 = future1.get();
-        Integer result2 = future2.get();
+        Integer result1 = es.submit(task1).get();
+        Integer result2 = es.submit(task2).get();
 
         log("task1.result=" + result1);
         log("task2.result=" + result2);

@@ -656,3 +656,114 @@ public class SumTaskMainV2 {
 
 `Callable.call()`은 `throws InterruptedException`과 같은 체크 예외도 던질 수 있음
 
+# Future 4 - 이유
+
+## Future가 필요한 이유
+
+두 코드를 비교해봄
+
+**Future를 반환하는 코드**
+
+```java
+Future<Integer> future1 = es.submit(task1); // 여기는 블로킹이 아님
+Future<Integer> future2 = es.submit(task2); // 여기는 블로킹이 아님
+
+future1.get();   // 여기서 블로킹
+future2.get();   // 여기서 블로킹
+```
+
+**Future 없이 결과를 직접 반환하는 코드(가정)**
+
+```java
+Integer sum1 = es.submit(task1); // 여기서 블로킹
+Integer sum2 = es.submit(task2); // 여기서 블로킹   
+```
+
+**Future 없이 결과를 직접 반환 - 가정**
+
+`ExecutorService`가 `Future` 없이 결과를 직접 반환한다고 가정
+
+- 요청 스레드는 `task1`을 `ExecutorService`에 요청하고 결과를 기다림
+  - 작업 스레드가 작업을 수행하는데 2초 걸림
+  - 요청 스레드는 결과를 받을 때까지 2초간 대기
+  - 결과를 받고 다음 라인을 수행
+- 요청 스레드는 `task2`을 `ExecutorService`에 요청하고 결과를 기다림
+  - 작업 스레드가 작업을 수행하는데 2초 걸림
+  - 요청 스레드는 결과를 받을 때까지 2초 대기
+  - 결과를 받고 요청 스레드가 다음 라인 수행
+
+`Future`를 사용하지 않는 경우 결과적으로 `task1`의 결과를 기다린 후 `task2`를 요청
+
+즉 총 4초의 시간이 소요되며 이는 곧 단인 스레드가 작업을 하는 것과 비슷한 결과
+
+**Future를 반환**
+
+`Future`를 반환한다고 가정
+
+- 요청 스레드는 `task1`을 `ExecutorService`에 요청
+  - 요청 스레드는 즉시 `Future`를 반환
+  - 작업 스레드1은 `task1`을 수행
+- 요청 스레드는 `task2`을 `ExecutorService`에 요청
+  - 요청 스레드는 즉시 `Future`를 반환
+  - 작업 스레드2은 `task2`을 수행
+
+`task1`, `task2`를 동시에 요청하여 동시에 수행됨
+
+- 이후에 요청 스레드는 `future1.get()`을 호출하여 대기
+  - 작업 스레드 1이 작업을 진행하는 약 2차간 대기하고 결과를 획득
+- 이후에 요청 스레드는 `future2.get()`을 호출하여 대기
+  - 작업 스레드 2는 이미 2초간 작업을 완료하였으므로 `future2.get()`은 거의 즉시 결과를 획득
+ 
+## Future를 잘못 사용하는 예
+
+이전 설명과 같은 원리로 `Future`를 호출하자 마자 바로 `get()`을 호출해도 문제가 될 수 있음
+
+**Future를 적절하게 잘 활용**
+
+```java
+Future<Integer> future1 = es.submit(task1); // 여기는 블로킹이 아님
+Future<Integer> future2 = es.submit(task2); // 여기는 블로킹이 아님
+
+Integer sum1 = future1.get();   // 여기서 블로킹
+Integer sum2 = future2.get();   // 여기서 블로킹
+```
+
+- 요청 스레드가 필요한 작업을 모두 요청한 다음에 결과 받음
+- 총 2초의 시간이 걸림
+
+**Future를 잘못 활용한 예1**
+
+```java
+Future<Integer> future1 = es.submit(task1); // 여기는 블로킹이 아님
+Integer sum1 = future1.get();   // 여기서 블로킹, 2초 대기
+
+Future<Integer> future2 = es.submit(task2); // 여기는 블로킹이 아님
+Integer sum2 = future2.get();   // 여기서 블로킹, 2초 대기
+```
+
+- 요청 스레드가 작업을 하나 요청하고 그 결과를 기다림, 다음 요청 또한 요청 후 결과를 기라림
+- 총 4초의 시간이 걸림
+
+**Future를 잘못 활용한 예1**
+
+```java
+Integer result1 = es.submit(task1).get();
+Integer result2 = es.submit(task2).get();
+```
+
+- `Future`를 잘못 활용한 예1과 똑같은 코드, `submit()`을 호출하고 연결해서 `get()`을 호출
+- 총 4초의 시간이 걸림
+
+## 정리
+
+- `Future`라는 개념이 없다면 결과를 받을 때 까지 요청 스레드는 아무일도 못하고 대기해야함
+- `Future`라는 개념 덕분에 요청 스레드는 대기하지 않고, 다른 작업을 수행
+  - 다른 작업을 더 요청할 수 있고, 모든 요청이 끝난 다음에 본인이 필요할 때 `Future.get()`을 호출해서 최종 결과를 받을 수 있음
+- `Future`를 사용할 경우 결과적으로 `task1`, `task2`를 동시에 요청할 수 있음
+
+`Future`는 요청 스레드를 블로킹(대기) 상태로 만들지 않고, 필요한 요청을 모두 수행할 수 있게 해줌
+
+필요한 모든 요청을 한 다음 `Future.get()`을 통해 블로킹 상태로 대기하며 결과를 받음
+
+이런 이유로 `ExecutorService`는 결과를 직접 반환하지 않고, `Future`를 반환
+
