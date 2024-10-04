@@ -767,3 +767,89 @@ Integer result2 = es.submit(task2).get();
 
 이런 이유로 `ExecutorService`는 결과를 직접 반환하지 않고, `Future`를 반환
 
+# Future5 - 정리
+
+`Future`는 작업의 미래 계산의 결과를 나타냄, 계산이 완료되었는지 확인하고, 완료될 때까지 기다릴 수 있는 기능 제공
+
+## Future 인터페이스
+
+```java
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+public interface Future<V> {
+    boolean cancel(boolean mayInterruptIfRunning);
+
+    boolean isCanceled();
+
+    boolean isDone();
+
+    V get() throws InterruptedException, ExecutionException;
+    V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
+    
+    enum State {
+        RUNNING,
+        SUCCESS,
+        FAILED,
+        CANCELED
+    }
+  
+    default State state() {}
+}
+```
+
+## 주요 메소드
+
+**boolean cancel(boolean mayInterruptIfRunning)**
+
+- 기능: 아직 완료되지 않은 작업을 취소
+- 매개변수: `mayInterruptIfRunning`
+  - `cancel(true)`: `Future`를 취소 상태로 변경, 이때 작업이 실행중이라면 `Thread.interrupt()`를 호출해서 작업 중단
+  - `cancel(false)`: `Future`를 취소 송태로 변경, 단 이미 실행 중인 작업을 중단하지 않음
+- 반환값: 작업이 성공적으로 취소된 경우 `true`, 이미 완료되었거나 취소할 수 없는 경우 `false`
+- 설명: 작업이 실행 중이 아니거나 아직 시작되지 않았으면 취소하고, 실행 중인 작업의 경우 `mayInterrupIfRunning`이 `true`이면 중단을 시도
+- 참고: 취소 상태의 `Future`에 `Future.get()`을 호출하면 `CancellationException` 런타임 예외가 발생
+
+**boolean isCancelled()**
+
+- 기능: 작업이 취소되었는지 여부를 확인
+- 반환값: 작업이 취소된 경우 `true`, 그렇지 않은 경우 `false`
+- 설명: 이 메소드는 작업이 `cancel()` 메소드에 의해 취소된 경우에 `true` 반환
+
+**boolean isDone()**
+
+- 기능: 작업이 완료되었는지 여부를 확인
+- 반환값: 작업이 완료된 경우 `true`, 그렇지 않은 경우 `false`
+- 설명: 작업이 정상적으로 완료되었거나, 취소되었거나, 예외가 발생하여 종료된 경우에 `true`를 반환
+
+**State state()**
+
+- 기능: `Future`의 상태를 반환, 자바 19부터 지원
+  - `RUNNING`: 작업 실행 중
+  - `SUCCESS`: 성공 완료
+  - `FAILED`: 실패 완료
+  - `CANCELLED`: 취소 완료
+
+**V get()**
+
+- 기능: 작업이 완료될 때까지 대기하고 완료되면 결과를 반환
+- 반환값: 작업의 결과
+- 예외
+  - `InterruptedException`: 대기 중에 현재 스레드가 인터럽트된 경우 발생
+  - `ExecutionException`: 작업 계산 중에 예외가 발생한 경우 발생
+- 설명: 작업이 완료될 때까지 get()을 호출한 현재 스레드를 대기(블로킹)함, 작업이 완료되면 결과 반환
+
+**V get(long timeout, TimeUnit unit)**
+
+- 기능: `get()`과 같은데, 시간 초과되면 예외를 발생시킴
+- 매개변수:
+  - `timeout`: 대기할 최대 시간
+  - `unit`: `timeout` 매개변수의 시간 단위 지정
+- 반환값: 작업의 결과
+- 예외: 
+  - `InterruptedException`: 대기 중에 현재 스레드가 인터럽트된 경우 발생
+  - `ExecutionException`: 계산 중에 예외가 발생한 경우 발생
+  - `TimeoutException`: 주어진 시간 내에 작업이 완료되지 않은 경우 발생
+- 설명: 지정된 시간 동안 결과를 기다림, 시간이 초과되면 `TimeoutException`을 발생
+
