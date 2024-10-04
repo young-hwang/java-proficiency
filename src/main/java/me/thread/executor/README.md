@@ -853,3 +853,100 @@ public interface Future<V> {
   - `TimeoutException`: 주어진 시간 내에 작업이 완료되지 않은 경우 발생
 - 설명: 지정된 시간 동안 결과를 기다림, 시간이 초과되면 `TimeoutException`을 발생
 
+# Future6 - 취소
+
+```java
+public class FutureCancelMain {
+  //    private static boolean mayInterruptIfRunning = true;
+  private static boolean mayInterruptIfRunning = false;
+
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    ExecutorService executorService = Executors.newFixedThreadPool(1);
+    Future<String> future = executorService.submit(new MyTask());
+    log("Future.state: " + future.state());
+
+    // 일정 시간 후 취소 시도
+    sleep(3000);
+
+    // cancel(boolean) 호출
+    log("future.cancel(" + mayInterruptIfRunning + ") 호출");
+    boolean cancel = future.cancel(mayInterruptIfRunning);
+    log("future.cancel(" + mayInterruptIfRunning + "), result: " + cancel);
+
+    // 결과 확인
+    try {
+      log("Future result: " + future.get());
+    } catch (CancellationException e) {
+      log("Future는 이미 취소 되었습니다.");
+    } catch (InterruptedException | ExecutionException e) {
+      e.printStackTrace();
+    }
+
+    executorService.close();
+  }
+
+  static class MyTask implements Callable<String> {
+    @Override
+    public String call() {
+      try {
+        for (int i = 0; i < 10; i++) {
+          log("작업 중: " + i);
+          Thread.sleep(1000);
+        }
+      } catch (InterruptedException e) {
+        log("Make Interrupted");
+        return "Interrupted";
+      }
+      return "Completed";
+    }
+  }
+}
+```
+
+매개변수 `mayInterruptIfRunning`를 변경하면서 어떻게 작동하는지 차이를 살펴봄
+
+- cancel(true): `Future`를 취소 상태로 변경, 이때 작업이 실행중이라면 `Thread.interrup()`를 호출해서 작업을 중다
+- cancel(false): `Future`를 취소 상태로 변경, 단 이미 실행 중인 작업을 중단하지 않음
+
+**실행결과 - mayInterruptIfRunning = true**
+
+```bash
+01:25:22.556 [pool-1-thread-1] 작업 중: 0
+01:25:22.556 [     main] Future.state: RUNNING
+01:25:23.564 [pool-1-thread-1] 작업 중: 1
+01:25:24.565 [pool-1-thread-1] 작업 중: 2
+Disconnected from the target VM, address: 'localhost:50637', transport: 'socket'
+01:25:25.568 [     main] future.cancel(true) 호출
+01:25:25.569 [pool-1-thread-1] Make Interrupted
+01:25:25.575 [     main] future.cancel(true), result: true
+01:25:25.575 [     main] Future는 이미 취소 되었습니다.
+```
+
+- `cancel(true)`를 호출
+- `mayInterruptIfRunning = true`를 사용하면 실행중인 작업에 인터럽트가 발생해서 실행중인 작업을 중시 시도함
+- 이후 `Future.get()`을 호출하면 `CancellationException` 런타임 예외가 발생
+
+**실행결과 - mayInterruptIfRunning = false**
+
+```bash
+01:33:29.338 [     main] Future.state: RUNNING
+01:33:29.338 [pool-1-thread-1] 작업 중: 0
+01:33:30.347 [pool-1-thread-1] 작업 중: 1
+01:33:31.353 [pool-1-thread-1] 작업 중: 2
+01:33:32.350 [     main] future.cancel(false) 호출
+01:33:32.354 [pool-1-thread-1] 작업 중: 3
+01:33:32.363 [     main] future.cancel(false), result: true
+01:33:32.364 [     main] Future는 이미 취소 되었습니다.
+01:33:33.360 [pool-1-thread-1] 작업 중: 4
+01:33:34.366 [pool-1-thread-1] 작업 중: 5
+01:33:35.371 [pool-1-thread-1] 작업 중: 6
+01:33:36.374 [pool-1-thread-1] 작업 중: 7
+01:33:37.381 [pool-1-thread-1] 작업 중: 8
+01:33:38.387 [pool-1-thread-1] 작업 중: 9
+```
+
+- `cancel(false)`를 호출함
+- `mayInterruptIfRunning=false`를 사용하면 실행중인 작업은 그냥 둠(인터럽트 걸리 않음)
+- 실행중인 작업은 그냥 두더라도 cancel()을 호출했기 때문에 `Future`는 `CANCEL` 상태가 됨
+- 이후 `Future.get()`을 호출하면 `CancellationException` 런타임 예외 발생
+
