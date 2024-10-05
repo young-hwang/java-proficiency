@@ -1021,6 +1021,51 @@ public class FutureExMain {
 
 싱글스레드 상황에서 일반적인 메서드를 호출하는 것과 같음
 
+# ExecutorService - 작업 컬렉션 처리
 
+`ExecutorService`는 여러 작업을 한 번에 편리하게 처리하는 `invokeAll()`, `invokeAny()` 기능을 제공
 
+## 작업 컬렉션 처리
+
+**invokeAll()**
+
+- `<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException`
+  - 모든 `Callable` 작업을 제출하고, 모든 작업이 완료될 때까지 기다림
+- `<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException`
+  - 지정된 시간 내에 모든 `Callable` 작업을 제출하고 완료될 때까지 기다림
+
+**invokeAny()**
+
+- `<T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException`
+  - 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환
+  - 완료되지 않은 나머지 작업은 취소
+- `<T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException`
+  - 지정된 시간 내에 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환
+  - 완료되지 않은 작업은 취소
+
+`invokeAll()`, `invokeAny()`를 사용하면 한꺼번에 여러 작업을 요청할 수 있음
+
+```java
+public class CallableTask implements Callable<Integer> {
+  private final String name;
+  private int sleepMs = 1000;
+
+  public CallableTask(String name) {
+    this.name = name;
+  }
+
+  public CallableTask(String name, int sleepMs) {
+    this.name = name;
+    this.sleepMs = sleepMs;
+  }
+
+  @Override
+  public Integer call() throws Exception {
+    log(name + " 실행");
+    sleep(this.sleepMs);
+    log(name + " 완료");
+    return sleepMs;
+  }
+}
+```
 
