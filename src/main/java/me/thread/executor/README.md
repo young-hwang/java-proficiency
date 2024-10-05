@@ -950,3 +950,77 @@ Disconnected from the target VM, address: 'localhost:50637', transport: 'socket'
 - 실행중인 작업은 그냥 두더라도 cancel()을 호출했기 때문에 `Future`는 `CANCEL` 상태가 됨
 - 이후 `Future.get()`을 호출하면 `CancellationException` 런타임 예외 발생
 
+# Future7 - 예외
+
+`Future.get()`을 호출하면 작업의 결과값 뿐아니라 작업 중에 발생한 예외도 받을 수 있음
+
+```java
+public class FutureExMain {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    log("요청 스레드 시작");
+    ExecutorService executorService = Executors.newSingleThreadExecutor();
+    Future<Integer> future = executorService.submit(new ExCallable());
+    log("Future.state: " + future.state());
+
+    // 일정 시간 후 취소 시도
+    sleep(1000);
+
+    try {
+      log("Future.state: " + future.state());
+
+      // 결과 확인
+      Integer result = future.get();
+
+      executorService.close();
+      log("요청 스레드 종료");
+    } catch (InterruptedException e) {
+      throw new RuntimeException(e);
+    } catch (ExecutionException e) {
+      log("e = " + e);
+      Throwable cause = e.getCause();
+      log("cause = " + cause);
+      Throwable cause1 = cause.getCause();
+      log("cause1 = " + cause1);
+    }
+  }
+
+  static class ExCallable implements Callable<Integer> {
+    @Override
+    public Integer call() throws Exception {
+      try {
+        throw new IllegalStateException("ex!");
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+}
+```
+
+**실행 결과**
+
+```bash
+02:46:30.333 [     main] 요청 스레드 시작
+02:46:30.343 [     main] Future.state: RUNNING
+02:46:31.348 [     main] Future.state: FAILED
+02:46:31.350 [     main] e = java.util.concurrent.ExecutionException: java.lang.RuntimeException: java.lang.IllegalStateException: 
+02:46:31.350 [     main] cause = java.lang.RuntimeException: java.lang.IllegalStateException: 
+02:46:31.351 [     main] cause1 = java.lang.IllegalStateException: ```bash
+```
+
+- 요청 스레드: `es.submit(new ExCallable())`을 호출해서 작업을 전달
+- 작업 스레드: `ExCallable`을 실행하는데, `IllegalStateException`예외가 발생함
+  - 작업 스레드는 `Future`에 발생한 예외를 담아둠, 예외도 객체임, 잡아서 필드에 보관할 수 있음
+  - 예외가 발생했으므로 `Future`의 상태는 `FAILED`가 됨
+- 요청 스레드: 결과를 얻기 위해 `future.get()` 호출
+  - `Future`의 상태가 `FAILED`이면 `ExecutionException` 예외를 던짐
+  - 이 예외는 내부에 `Future`에 저장해둔 `IllegalStateException`을 포함
+  - `e.getCause()`을 호출하면 작업에서 발생한 원본 예외를 받을 수 있음
+
+`Future.get()`은 작업의 결과 값을 받을 수 있고 예외를 받을 수도 있음
+
+싱글스레드 상황에서 일반적인 메서드를 호출하는 것과 같음
+
+
+
+
