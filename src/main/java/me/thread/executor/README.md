@@ -1069,3 +1069,117 @@ public class CallableTask implements Callable<Integer> {
 }
 ```
 
+```java
+public class InvokeAllMain {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    ExecutorService executor = Executors.newFixedThreadPool(10);
+    CallableTask task1 = new CallableTask("task1", 1000);
+    CallableTask task2 = new CallableTask("task2", 2000);
+    CallableTask task3 = new CallableTask("task3", 3000);
+    List<Future<Integer>> futures = executor.invokeAll(List.of(task1, task2, task3));
+    for (Future<Integer> future : futures) {
+      Integer value = future.get();
+      log("value = " + value);
+    }
+    executor.close();
+  }
+}
+```
+
+```java
+public class InvokeAnyMain {
+  public static void main(String[] args) throws InterruptedException, ExecutionException {
+    ExecutorService executor = Executors.newFixedThreadPool(10);
+    CallableTask task1 = new CallableTask("task1", 1000);
+    CallableTask task2 = new CallableTask("task2", 2000);
+    CallableTask task3 = new CallableTask("task3", 3000);
+    Integer value = executor.invokeAny(List.of(task1, task2, task3));
+    log("value = " + value);
+    executor.close();
+  }
+}
+```
+
+# 문제와 풀이
+
+커머스 회사의 주문 팀, 연동하는 시스템이 점점 많아지면서 주문 프로세스가 너무 오래 걸림
+
+하나의 주문 발생 시 3가지 작업이 발생
+
+- 재고를 업데이트, 1초
+- 배송 시스템에 알림, 1초
+- 회계 시스템에 내용을 업데이트, 1초
+
+각 1초가 걸리기에 고객 입장에서는 보통 3초의 시간을 대기
+
+3가지 업무의 호출 순서는 상관 없음, 기존 코드를 개선하여 주문 시간을 줄여봄
+
+```java
+public class OldOrderService {
+  public void order(String orderNo) {
+    InventoryWork inventoryWork = new InventoryWork(orderNo);
+    ShippingWork shippingWork = new ShippingWork(orderNo);
+    AccountingWork accountingWork = new AccountingWork(orderNo);
+
+    // 작업 요청
+    Boolean inventoryResult = inventoryWork.call();
+    Boolean shippingResult = shippingWork.call();
+    Boolean accountResult = accountingWork.call();
+
+    // 결과 확인
+    if (inventoryResult && shippingResult && accountResult) {
+      log("모든 주문 처리 성공적으로 완료");
+    }
+  }
+
+  private class InventoryWork {
+    private String orderNo;
+
+    public InventoryWork(String orderNo) {
+      this.orderNo = orderNo;
+    }
+
+    public Boolean call() {
+      log("재고 업데이트 시작: " + orderNo);
+      sleep(1000);
+      log("재고 업데이트 종료: " + orderNo);
+      return true;
+    }
+  }
+
+  private class ShippingWork {
+    private String orderNo;
+
+    public ShippingWork(String orderNo) {
+      this.orderNo = orderNo;
+    }
+
+    public Boolean call() {
+      log("배송 시스템 알림 시작: " + orderNo);
+      sleep(1000);
+      log("배송 시스템 알림 종료: " + orderNo);
+      return true;
+    }
+  }
+
+  private class AccountingWork {
+    private String orderNo;
+
+    public AccountingWork(String orderNo) {
+      this.orderNo = orderNo;
+    }
+
+    public Boolean call() {
+      log("회계 시스템 업데이트 시작: " + orderNo);
+      sleep(1000);
+      log("회계 시스템 업데이트 종료: " + orderNo);
+      return true;
+    }
+  }
+}
+```
+
+
+
+
+
