@@ -1265,3 +1265,90 @@ Future<?> future = executor.submit(new MyRunnable());
   - 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환, 완료되지 않은 나머지 작업은 취소
 - `<T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException`
   - 지정된 시간 내에 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환, 완료되지 않은 나머지 작업은 취소
+
+# ExecutorService 우아한 종료 - 소개
+
+고객의 주문을 처리하는 서버를 운영 중인 경우
+
+만약 서버 기능을 업데이트하기 위해 서버를 재시작해야 한다고 가정
+
+이때 서버 애플리케이션이 고객의 주문을 처리하고 있는 도중에 갑자기 재시작 된다면, 해당 고객의 주문이 제대로 진행되지 못할 것임
+
+가장 이상적인 방법은 새로운 주문 요청은 막고, 이미 진행중인 주문은 모두 완료한 다음에 서버를 재시작하는 것
+
+이처럼 서비스를 안정적으로 종료하는 것도 매우 중요
+
+이렇게 문제 없이 우아하게 종료하는 방식을 `graceful shutdown` 이라함
+
+이런 관점에서 `ExecutorService`의 종료에 대해 알아봄
+
+# ExecutorService의 종료 메소드
+
+`ExecutorService`에는 종료와 관련된 다양한 메소드가 존재
+`ExecutorService`를 서비스라고 명명
+
+## 서비스 종료
+
+- `void shutdown()`
+  - 새로운 작업을 받지 않고, 이미 제출된 작업을 모두 완료한 후 종료
+  - 논 블로킹 메소드(이 메소드를 호출한 스레드는 대기하지 않고 즉시 다음 코드를 호출)
+- `List<Runnable> shutdownNow()`
+  - 실행 중인 작업을 중단하고, 대기 중인 작업을 반환하며 즉시 종료
+  - 실행 중인 작업을 중단하기 위해 인터럽트 발생
+  - 논 블로킹 메소드
+
+## 서비스 상태 확인
+
+- `boolean isShutdown()`
+  - 서비스가 종료되었는지 확인
+- `boolean isTerminated()`
+  - `shutdown()`, `shutdownNow()` 호출 후, 모든 작업이 완료되었는지 확인
+
+## 작업 완료 대기
+
+- `boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedExeception`
+  - 서비스 종료시 모든 작업이 완료될 때까지 대기, 이때 지정된 시간까지만 대기
+  - 블로킹 메소드
+
+## close()
+
+`close()`는 자바 19부터 지원하는 서비스 종료 메소드임
+
+이 메소드는 `shutdown()`과 같다고 생각하면됨
+
+- 더 정확히는 `shutdown()`을 호출하고, 기다려도 작업이 완료되지 않으면 `shutdownNow()`를 호출
+- 호출한 스레드에 인터럽트가 발생해도 `shutdownNow()`를 호출
+
+## shutdown() - 처리중인 작업이 없는 경우
+
+- `ExecutorService`에 아무런 작어이 없고, 스레드만 2개 대기하고 있음
+
+- `shutdown()`을 호출
+- `ExecutorService`는 새로운 요청을 거절
+  - 거절시 기본적으로 `java.util.concurrent.RejectedExecutionException` 예외가 발생
+- 스레드 풀의 자원을 정리
+
+## shutdown() - 처리중인 작업이 있는 경우
+
+- `shutdown`을 호출
+- `ExecutorService`는 새로운 요청을 거절
+- 스레드 풀의 스레드는 처리중인 작업을 완료
+- 스레드 풀의 스레드는 큐에 남아있는 작업도 모두 꺼내서 완료
+
+- 모든 작업을 완료하면 자원을 정리
+- 결과적으로 처리중이던 task 및 큐에 대기중인 task도 모두 처리 완료
+
+## shutdownNow() - 처리중인 작업이 있는 경우
+
+- `shutdownNow()`를 호출
+- `ExecutorService`는 새로운 요청을 거절
+- 큐를 비우면서, 큐에 있는 작업을 모두 꺼내어 컬렉션으로 반환
+  - `List<Runnable> runnables = es.shutdownNow()`, Runnable은 Future임
+- 작업 중인 스레드에 인터럽트가 발생
+  - 작업 중인 `taskA`, `taskB`는 인터럽트가 걸림
+  - 큐에 대기중인 `taskC`, `taskD`는 수행되지 않음
+- 작업을 완료하면 자원을 정리
+
+# ExecutorService 우아한 종료 - 구현
+
+
