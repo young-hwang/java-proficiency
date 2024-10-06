@@ -1351,4 +1351,165 @@ Future<?> future = executor.submit(new MyRunnable());
 
 # ExecutorService 우아한 종료 - 구현
 
+`shutdown()`을 호출해서 이미 들어온 모든 작업을 다 처리하고 서비스를 우아하게 종료(graceful shutdown)하는 것이 가장 이상적
+
+갑자기 요청이 너무 많이 들어와서 큐에 대기중인 작업이 너무 많아 작업 완료 어렵가나, 작업이 너무 오래 걸리거나, 또는 버그가 발생해서 특정 작업이 끝나지 않을 수 있음
+
+위와 같은 현상이 있는 경우 서비스가 너무 늦게 종료되거나, 종료되지 않는 문제가 발생
+
+이럴 때는 보통 우아하게 종료하는 시간을 정함
+
+예를 들어 60초까지는 작업을 다 처리할 수 있게 기다리는 것, 60초가 지나면, 무언가 문제가 있다고 가정하고 `shutdownNow()`를 호출해서 작업들을 강제로 종료
+
+## close()
+
+`close()`의 경우 `shutdown()`을 호출하고, 하루를 기다려도 작업이 완료되지 않으면 `shutdownNow()`를 호출
+
+하지만 대부분 하루를 기다릴 수 없을 것임
+
+우선 `shutdown()`을 통해 우아한 종료를 시도하고, 10초(60초 실무?)간 종료되지 않으면 `shutdownNow()` 통해 강제 종료하는 방식으로 구현
+
+# ExecutorService 우아한 종료 - 구현
+
+구현할 `shutdownAndAwaitTermination()`은 `ExecutorService` 공식 API 문서에서 제안하는 방식
+
+```java
+public class ExecutorShutdownMain {
+  public static void main(String[] args) {
+    ExecutorService executor = Executors.newFixedThreadPool(2);
+    executor.execute(new RunnableTask("taskA"));
+    executor.execute(new RunnableTask("taskB"));
+    executor.execute(new RunnableTask("taskC"));
+    executor.execute(new RunnableTask("longTask", 100_000)); // 100초 대기
+    printState(executor);
+    log("executor shutdown 시작");
+    shutdownAndAwaitTermination(executor);
+    log("executor shutdown 종료");
+    printState(executor);
+  }
+
+  private static void shutdownAndAwaitTermination(ExecutorService pool) {
+    pool.shutdown(); // non-blocking, 새로운 작업 받지 않음, 처리중이거나 큐에 이미 대기중인 작업은 처리
+    try {
+      // 이미 대기중인 작업들을 모두 완료할 때 까지 10초 기다림
+      if (!pool.awaitTermination(10, TimeUnit. SECONDS)) {
+        log("서비스 정상 종료 실패 -> 강제 종료 시도");
+        pool.shutdownNow(); // Cancel currently executing tasks
+        // Wait a while for tasks to respond to being cancelled
+        if (!pool.awaitTermination(10, TimeUnit. SECONDS))
+          System. err. println("서비스가 종료 되지 않았습니다.");
+      }
+    } catch (InterruptedException ex) {
+      // (Re-) Cancel if current thread also interrupted
+      pool.shutdownNow();     // Preserve interrupt status
+      Thread.currentThread().interrupt();
+    }
+  }
+}
+```
+
+```bash
+22:43:17.241 [pool-1-thread-1] taskA 시작
+22:43:17.241 [pool-1-thread-2] taskB 시작
+22:43:17.241 [     main] [pool=2, active=2, queued=2, completedTask=0]
+22:43:17.245 [     main] executor shutdown 시작
+22:43:18.251 [pool-1-thread-1] taskA 완료
+22:43:18.251 [pool-1-thread-2] taskB 완료
+22:43:18.253 [pool-1-thread-2] longTask 시작
+22:43:18.253 [pool-1-thread-1] taskC 시작
+22:43:19.259 [pool-1-thread-1] taskC 완료
+Disconnected from the target VM, address: 'localhost:54128', transport: 'socket'
+22:43:27.250 [     main] 서비스 정상 종료 실패 -> 강제 종료 시도
+22:43:27.251 [pool-1-thread-2] Interrupt 발생, sleep interrupted
+22:43:27.252 [     main] executor shutdown 종료
+22:43:27.252 [     main] [pool=0, active=0, queued=0, completedTask=4
+
+Exception in thread "pool-1-thread-2" java.lang.RuntimeException: java.lang.InterruptedException: sleep interrupted
+	at me.util.ThreadUtils.sleep(ThreadUtils.java:12)
+	at me.thread.executor.RunnableTask.run(RunnableTask.java:22)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.lang.InterruptedException: sleep interrupted
+	at java.base/java.lang.Thread.sleep0(Native Method)
+	at java.base/java.lang.Thread.sleep(Thread.java:509)
+	at me.util.ThreadUtils.sleep(ThreadUtils.java:9)
+	... 4 more
+```
+
+**작업 처리에 필요한 시간**
+
+- `taskA`, `taskB`, `taskC`: 1초
+- `longTask`: 100초
+
+**서비스 종료**
+
+```java
+executor.shutdown();
+```
+
+- 새로운 작업을 받지 않음, 처리 중이거나, 큐에 이미 대기중인 작업은 처리, 이후에 풀의 스레드를 종료
+- `shutdown()`은 블로킹 메소드가 아님, 서비스가 종료될 때까지 `main` 스레드가 대기하지 않음, `main` 스레드는 바로 다음 코드를 호출
+
+```java
+if(!executor.awaitTermination(10, TimeUnit.SECONDS)) { ... }
+```
+
+- 블로킹 메소드
+-  `main` 스레드는 대기하며 서비스 종료를 10초간 대기
+  - 만약 10초 안에 모든 작업이 안료된다면 `true`를 반환
+- `taskA`, `taskB`, `taskC`의 수행이 완료, 하지만 `longTask`는 10추가 지나도 완료되지 않음
+  - 따라서 `false` 반환
+ 
+**서비스 정상 종료 실패 -> 강제 종료 시도**
+
+```java
+log("서비스 정상 종료 실패 -> 강제 종료 시도");
+executor.shutdownNow(); 
+if (!executor.awaitTermination(10, TimeUnit. SECONDS))
+    System.err.println("서비스가 종료 되지 않았습니다.");
+```
+
+- 정상 종료가 10초 이상 너무 오래 걸림
+- `shutdownNow()`를 통해 강제 종료 들어감, `shutdown()`과 마찬가지로 블로킹 메소드가 아님
+- 강제 종료를 하면 작업 중인 스레드에 인터럽트가 발생, 로그를 통해 인터럽트 확인
+- 언터럽트가 발생하면서 스레드도 작업을 종료, `shutdownNow()`를 통한 강제 shutdown 완료
+
+```bash
+22:43:27.250 [     main] 서비스 정상 종료 실패 -> 강제 종료 시도
+22:43:27.251 [pool-1-thread-2] Interrupt 발생, sleep interrupted
+22:43:27.252 [     main] executor shutdown 종료
+```
+
+**서비스 종료 실패**
+
+그런데 마지막에 강제 종료일 `executor.shutdownNow()`를 호출한 다음에 왜 10초간 또 기다릴까?
+
+`shutdownNow()`가 작업 중인 스레드에 인터럽트를 호출하는 것은 맞음
+
+인터럽트를 호출하더라도 여러가지 이유로 작업에 시간이 걸릴수 있음
+
+인터럽트 이후에 자원을 정리하는 어떤 간단한 작업을 수행할 수도 있음
+
+이러한 시간을 기다려 주는 것임
+
+극단적이지만 최악의 경우 스레드가 인터럽트를 받을 수 없는 코드를 수행중일 수 있음
+
+이 경우 인터럽트 예외가 발생하지 않고, 스레드가 계속 수행됨
+
+**인터럽트를 받을수 없는 코드**
+
+```java
+while(true) { //Empty }
+```
+
+이런 스레드는 자바를 강제 종료해야 제거할 수 있음
+
+이런 경우를 대비해서 강제 종료 후 10초간 대기해도 작업이 완료되지 않으면 "서비스가 종료되지 않았습니다."라고 개발자가 인자할 수 있는 로그를 남겨두어야 함
+
+## 정리
+
+서비스를 종료할 때 생각보다 고려해야 할 점이 많다는 점을 이해
+
+기본적으로 우아한 종료를 선택하고, 우아한 종료가 되지 않으면 무한정 기다릴 수는 없으니, 그 다음으로 강제 종료를 하는 방식으로 접근하는 것이 좋음
 
