@@ -1553,8 +1553,160 @@ Disconnected from the target VM, address: 'localhost:54299', transport: 'socket'
 23:42:22.984 [     main] [pool=0, active=0, queued=0, completedTask=6
 ```
 
-
 # ExecutorService 스레드 풀 관리 - 분석
+
+## 실행 분석
+
+- `task1` 작업 요청
+- `Executor`는 스레드 풀에 스레가 core 사이즈 만큼 있는지 확인
+  - core 사이즈 만큼 없다면 스레드 하나 생성
+  - 작업을 처리하기 위해 스레드를 하나 생성했기 때문에 작업을 큐에 넣을 필요 없이, 해당 스레드가 바로 작업 처리
+
+```bash
+23:42:16.965 [pool-1-thread-1] task1 시작
+23:42:16.970 [     main] task1 -> [pool=1, active=1, queued=0, completedTask=0]
+```
+
+- 새로 만들어진 스레드1이 `task1`을 수행
+
+```bash
+23:42:16.970 [pool-1-thread-2] task2 시작
+23:42:16.970 [     main] task2 -> [pool=2, active=2, queued=0, completedTask=0]
+```
+
+- `task2` 작업 요청
+- `Executor`는 스레드 풀에 스레드가 core 사이즈 만큼 있는지 확인
+  - core 사이즈 만큼 없으므로 스레드를 하나 생성
+- 새로 만들어진 스레드2가 `task2`를 처리
+
+```bash
+23:42:16.970 [     main] task3 -> [pool=2, active=2, queued=1, completedTask=0]
+```
+
+- `task3` 작업 요청
+- `Executor`는 스레드 풀에 스레드가 core 사이즈 만큼 있는지 확인
+- core 사이즈 만큼 스레드가 이미 만들어졌고, 스레드 풀에 사용할 수 있는 스레드가 없으므로 이 경우 큐에 작업을 보관
+
+
+```bash
+23:42:16.970 [     main] task4 -> [pool=2, active=2, queued=2, completedTask=0]
+```
+
+- `task4` 작업 요청
+- `Executor`는 스레드 풀에 스레드가 core 사이즈 만큼 있는지 확인
+- core 사이즈 만큼 스레드가 이미 만들어졌고, 스레드 풀에 사용할 수 있는 스레드가 없으므로 이 경우 큐에 작업을 보관
+
+```bash
+23:42:16.971 [     main] task5 -> [pool=3, active=3, queued=2, completedTask=0]
+23:42:16.971 [pool-1-thread-3] task5 시작
+```
+
+- `task5` 작업 요청
+- `Executor`는 스레드 풀에 스레드가 core 사이즈 만큼 있는지 확인 -> core 사이즈 만큼 존재
+- `Executor`는 큐에 보관을 시도 -> 큐가 가득참
+ 
+큐가 가득차면 긴급 상황, 대기하는 작업이 꽉 찰 정도로 요청이 많다는 뜻
+
+이 경우 `Executor`는 max(maximumPoolSize)사이즈 까지 초과 스레드를 만들어 작업을 수행
+
+- `core=2`: 기본 스레드는 최대 2개
+- `maximumPoolSize=4`: 기본 스레드 2개에 초과 스레드 2개 총 4개 스레드 가능(초과 스레드 = max - core)
+- `Executor`는 초과 스레드인 스레드3을 생성
+- 작업을 처리하기 위해 스레드 하나를 생성했으므로 작업을 큐에 넣을 필요 없이 해당 스레드가 바로 작업을 처리
+  - 참고로 이 경우 큐가 가득찼기에 큐에 넣는 것도 불가능
+- 스레드3이 `task5` 작업 처리
+
+```bash
+23:42:16.971 [     main] task6 -> [pool=4, active=4, queued=2, completedTask=0]
+23:42:16.971 [pool-1-thread-4] task6 시작
+```
+
+- `task6` 작업 요청
+- 큐가 가득참
+- `Executor`는 초과 스레드인 스레드4을 생성하여 `task6`을 처리
+  - 큐가 가득찼기 때문에 작업을 큐에 넣는 것은 불가능
+ 
+```bash
+23:42:16.971 [     main] task7 실행 거절 예외 발생 
+java.util.concurrent.RejectedExecutionException: Task me.thread.executor.RunnableTask@2758fe70 rejected from java.util.concurrent.ThreadPoolExecutor@7a5d012c
+[Running, pool size = 4, active threads = 4, queued tasks = 2, completed tasks = 0]
+```
+
+- `task7` 작업 요청
+- 큐가 가득참
+- 스레드 풀의 스레드도 max 사이즈 만큼 가득참
+- `RejectedExecutionException`이 발생
+
+큐에 넣을 수도 스레드를 만들수도 없음, 따라서 작업을 거절
+
+- 작업들이 수행됨
+
+```bash
+23:42:17.969 [pool-1-thread-1] task1 완료
+23:42:17.975 [pool-1-thread-2] task2 완료
+```
+
+- 스레드1이 `task1`을 스레드2이 `task2`의 작업을 완료하고 스레드 풀에 대기 상태로 돌아감
+
+```bash
+23:42:17.970 [pool-1-thread-1] task3 시작
+23:42:17.975 [pool-1-thread-2] task4 시작
+```
+- 스레드 풀의 스레드는 큐의 데이터 획득하기 위해 대기
+- 스레드1: `task3`을 획득
+- 스레드2: `task4`를 획득
+
+```bash
+23:42:19.974 [     main] [pool=4, active=0, queued=0, completedTask=6]
+```
+
+- 계속 수행이 되어 모든 작업이 완료됨
+
+```bash
+23:42:22.979 [     main] maximumPoolSize 대기 시간 초과
+23:42:22.981 [     main] [pool=2, active=0, queued=0, completedTask=6]
+```
+
+- 스레드3, 스레드4와 같은 초과 스레드들은 지정된 시간까지 작업을 하지 않고 대기하면 제거(긴급한 작업들이 끝난것으로 이해)
+- 여기서느 지정한 3초간 스레드3, 스레드4가 작업을 진행하지 않았기 때문에 스레드 풀에서 제거
+- 초과 스레드가 작업을 처리할 때 마다 시간은 계속 초기화 됨
+  - 작업 요청이 계속 들어온다면 긴급한 상황이 끝난 것이 아님, 따라서 긴급한 상황이 끝날 때 까지는 초과 스레드를 살려 두는 것이 많은 스레드를 사용해서 작업을 더 빨리 처리할 수 있음
+
+```bash
+23:42:22.983 [     main] shutdown 완료
+23:42:22.984 [     main] [pool=0, active=0, queued=0, completedTask=6
+```
+
+- `shutdown()`이 진행되어 풀의 스레드가 모두 제거
+
+**정리 - Executor 스레드 풀 관리**
+
+1. 작업을 요청하면 core 사이즈 만큼 스레드 생성
+2. core 사이즈를 초과하면 큐에 작업을 대기
+3. 큐를 초과하면 max 사이즈 만큼 스레드 생성, 임시로 사용되는 초과 스레드
+   - 작업을 초과 스레드가 바로 수행
+4. 큐도 가득차고 풀에 max 사이즈를 초과하면 작업을 받을 수 없음, 요청을 거절, 예외가 발생
+
+## 스레드 미리 생성하기
+
+응답시간이 아주 중요한 서버라면, 서버가 고객의 처음 요청을 받기 전에 스레드를 스레드 풀에 미리 생성해두고 싶을 수 있음
+
+스레드를 미리 생성해두면 처음 요청에서 사용되는 스레드의 생성 시간을 줄일 수 있음
+
+`TreadPoolExecutor.prestartAllCoreThreads()`를 사용하면 기본 스레드를 미리 생성 가능
+
+`ExecutorService`는 이 메소드를 제공하지 않음
+
+```java
+public class PreStartPoolMain {
+  ...
+}
+```
+
+
+
+
+
 
 # ExecutorService 전략 - 고정 풀 전략
 
