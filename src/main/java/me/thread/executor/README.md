@@ -1703,14 +1703,37 @@ public class PreStartPoolMain {
 }
 ```
 
+# Executors 전략 - 고정 풀 전략
+
+## Executor 스레드 풀 관리 - 다양한 전략
+
+`ThreadPoolExecutor`를 사용하면 스레드 풀에 사용되는 숫자와 블로킹 큐등 다양한 속성을 조절할 수 있음
+
+- `corePoolSize`: 스레드 풀에서 관리되는 기본 스레드의 수
+- `maximumPoolSize`: 스레드 풀에서 관리되는 최대 스레드 수
+- `keepAliveTime`, `TimeUnit unit`: 기본 스레드 수를 초과해서 만들어진 스레드가 생존할 수 있는 대기시간, 이 시간 동안 처리할 작없이 없다면 초과 스레드는 제거됨
+- `BlockingQueue workQueue`: 작업을 보관할 블로킹 큐
+
+이런 속성들을 조절하면 자신에게 맞는 스레드 풀 전략을 사용할 수 있음
+
+자바는 `Executors` 클래스를 통해 3가지 기본 전략을 제공함
+
+- newSingleThreadPool(): 단일 스레드 풀 전략
+- newFixedThreadPool(nThreads): 고정 스레드 풀 전략
+- newCachedThreadPool(): 캐시 스레드 풀 전략
+
+**newSingleThreadPool()**: 단일 스레드 풀전략
+
+- 스레드 풀에 기본 스레드 1개만 사용
+- 큐 사이즈에 제한이 없음(LinkedBlockingQueue)
+- 주로 간단히 사용하거나 테스트 용도로 사용
+
+```java
+new ThreadPoolExecutor(1, 1, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>())
+```
 
 
-
-
-
-# ExecutorService 전략 - 고정 풀 전략
-
-# ExecutorService 전략 - 캐시 풀 전략
+# Executors 전략 - 캐시 풀 전략
 
 # ExecutorService 전략 - 사용자 정의 풀 전략
 
