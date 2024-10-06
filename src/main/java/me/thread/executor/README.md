@@ -389,32 +389,7 @@ Future<Integer> future = es.submit(new MyCallable());
 
 ```java
 public class CallableMainV2 {
-  public static void main(String[] args) throws InterruptedException, ExecutionException {
-    ExecutorService executorService = Executors.newFixedThreadPool(1);
-    MyCallable myCallable = new MyCallable();
-    log("submit() 호출");
-    Future<Integer> future = executorService.submit(myCallable);
-    log("future 즉시 반환, future = " + future);
-
-    log("future.get() [블로킹] 메소드 호출 시작 -> main 스레드 WAITING");
-    Integer value = future.get();
-    log("future.get() [블로킹] 메소드 호출 완료 -> main 스레드 RUNNABLE");
-    log("result value = " + value);
-    log("future 완료, future = " + future);
-    executorService.close();
-  }
-
-  static class MyCallable implements Callable<Integer> {
-    @Override
-    public Integer call() {
-      log("Runnable 시작");
-      sleep(2000);
-      int value = new Random().nextInt(10);
-      log("create value = " + value);
-      log("Runnable 완료");
-      return value;
-    }
-  }
+  ...
 }
 ```
 
@@ -1512,4 +1487,93 @@ while(true) { //Empty }
 서비스를 종료할 때 생각보다 고려해야 할 점이 많다는 점을 이해
 
 기본적으로 우아한 종료를 선택하고, 우아한 종료가 되지 않으면 무한정 기다릴 수는 없으니, 그 다음으로 강제 종료를 하는 방식으로 접근하는 것이 좋음
+
+# ExecutorService 스레드 풀 관리 - 코드
+
+Executor 프레임워크가 어떤식으로 스레드를 관리하는지 깊이있게 확인
+
+실무에서 대량의 요청을 별도의 스레드에서 어떤식으로 처리해야 하는지에 대한 기본기를 쌓을 수 있음
+
+`ExecutorService`의 기본 구현체인 `ThreadPoolExecutor`의 생성자는 다음 속성을 사용
+
+- `corePoolSize`: 스레드 풀에서 관리되는 기본 스레드의 수
+- `maximumPoolSize`: 스레드 풀에서 관리되는 최대 스레드 수
+- `keepAliveTime`, `TimeUnit unit`: 기본 스레드 수를 초과해서 만들어진 스레드가 생존할 수 있는 대기시간, 이 시간 동안 처리할 작없이 없다면 초과 스레드는 제거됨
+- `BlockingQueue workQueue`: 작업을 보관할 블로킹 큐
+
+`corePoolSize`와 `maximumPoolSize`의 차이를 알아보기 위해 간단한 예제를 생성
+
+```java
+public class PoolSizeMainV1 {
+  ...
+}
+```
+
+```java
+BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(2);
+ExecutorService executor = new ThreadPoolExecutor(2, 4, 3000, TimeUnit.MILLISECONDS, workQueue);
+```
+
+- 작업을 보관할 블로킹 큐의 구현체로 `ArrayBlockingQueue(2)`를 사용, 사이즈를 2로 설정했으므로 최대 2개까지 작업을 큐에 보관할 수 있음
+- `corePoolSize=2`, `maximumPoolSize=4`를 사용해서 기본 스레드는 2개, 최대 스레드는 4개로 설정
+  - 스레드 풀에 기본 2개의 스레드를 운영, 요청이 너무 많거나 급한 경우 스레드 풀은 최대 4개까지 스레드를 증가시켜 사용, 기본 스레드 수를 초과해서 만들어진 스레드를 초과 스레드라함
+- `3000`, `TimeUnit.MILLISECONDS`
+  - 초과 스레드가 생존할 수 있는 대기 시간을 의미, 이 시간 동안 초과 스레드가 처리할 작업이 없다면 초과 스레드는 제거됨
+  - 3000밀리초(3초)를 설정했으므로 초과 스레드가 3초간 작업을 하지 않고 대기한다면 초과 스레드는 스레드 풀에서 제거
+
+**실행 결과**
+
+```bash
+23:42:16.961 [     main] [pool=0, active=0, queued=0, completedTask=0]
+23:42:16.965 [pool-1-thread-1] task1 시작
+23:42:16.970 [     main] task1 -> [pool=1, active=1, queued=0, completedTask=0]
+23:42:16.970 [pool-1-thread-2] task2 시작
+23:42:16.970 [     main] task2 -> [pool=2, active=2, queued=0, completedTask=0]
+23:42:16.970 [     main] task3 -> [pool=2, active=2, queued=1, completedTask=0]
+23:42:16.970 [     main] task4 -> [pool=2, active=2, queued=2, completedTask=0]
+23:42:16.971 [     main] task5 -> [pool=3, active=3, queued=2, completedTask=0]
+23:42:16.971 [pool-1-thread-3] task5 시작
+23:42:16.971 [     main] task6 -> [pool=4, active=4, queued=2, completedTask=0]
+23:42:16.971 [pool-1-thread-4] task6 시작
+23:42:16.971 [     main] task7 실행 거절 예외 발생 java.util.concurrent.RejectedExecutionException: Task me.thread.executor.RunnableTask@2758fe70 rejected from java.util.concurrent.ThreadPoolExecutor@7a5d012c[Running, pool size = 4, active threads = 4, queued tasks = 2, completed tasks = 0]
+23:42:17.969 [pool-1-thread-1] task1 완료
+23:42:17.970 [pool-1-thread-1] task3 시작
+23:42:17.975 [pool-1-thread-2] task2 완료
+23:42:17.975 [pool-1-thread-2] task4 시작
+23:42:17.976 [pool-1-thread-4] task6 완료
+23:42:17.976 [pool-1-thread-3] task5 완료
+23:42:18.975 [pool-1-thread-1] task3 완료
+23:42:18.981 [pool-1-thread-2] task4 완료
+23:42:19.973 [     main] 작업 수행 완료
+23:42:19.974 [     main] [pool=4, active=0, queued=0, completedTask=6]
+Disconnected from the target VM, address: 'localhost:54299', transport: 'socket'
+23:42:22.979 [     main] maximumPoolSize 대기 시간 초과
+23:42:22.981 [     main] [pool=2, active=0, queued=0, completedTask=6]
+23:42:22.983 [     main] shutdown 완료
+23:42:22.984 [     main] [pool=0, active=0, queued=0, completedTask=6
+```
+
+
+# ExecutorService 스레드 풀 관리 - 분석
+
+# ExecutorService 전략 - 고정 풀 전략
+
+# ExecutorService 전략 - 캐시 풀 전략
+
+# ExecutorService 전략 - 사용자 정의 풀 전략
+
+# Executor 예외 정책
+
+# 정리
+
+
+
+
+
+
+
+
+
+
+
 
