@@ -1179,7 +1179,89 @@ public class OldOrderService {
 }
 ```
 
+# 정리
 
+## Executor 인터페이스
 
+```java
+package java.util.concurrent;
 
+public interface Executor {
+    void execute(Runnable command);
+}
+```
 
+- 가장 단순한 작업 실행 인터페이스, `execute(Runnable command)` 메소드 하나를 가지고 있음
+
+## ExecutorService 인터페이스 - 주요 메소드
+
+```java
+import java.util.Collection;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeoutException;
+
+public interface ExecutorService extends Executor, AutoCloseable {
+  // 종료 메소드
+  void shutdown();
+  List<Runnable> shutdownNow();
+  boolean isShutdown();
+  boolean isTerminated();
+  boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException;
+
+  // 단일 실행
+  <T> Future<T> submit(Callable<T> task);
+  <T> Future<T> submit(Runnable<T> task, T result);
+  Future<?> submit(Runnable task);
+
+  // 다수 실행
+  <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException;
+  <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException;
+
+  @Override
+  default void close() {...}
+}
+```
+
+- `Executor` 인터페이스를 확장하여 작업 제출과 제어 기능을 추가로 제공
+- 주요 메소드로 `submit()`, `invokeAll()`, `invokeAny()`, `shutdown()`등이 있음
+- `Executor` 프레임워크를 사용할 때는 대부분이 인터페이스를 사용
+- `ExecutorService` 인터페이스의 기본 구현체는 `ThreadPoolExecutor`임
+
+## ExecutorService 주요 메소드 정리
+
+###작업 제출 및 실행
+
+- `void execute(Runnable command)`: `Runnable` 작업을 제출, 반환값이 없음
+- `<T> Future<T> submit(Callable<T> task)`: `Callable` 작업을 제출하고 결과를 반환받음
+- `Future<?> submit(Runnable task)`: `Runnable` 작업을 제출하고 결과를 반환
+
+`ExecutorService.submit()`에는 반환 결과가 있는 `Callable`뿐 아니라 반환 결과가 없는 `Runnable`도 사용 가능
+
+```java
+Future<?> future = executor.submit(new MyRunnable());
+```
+
+`Runnable`은 반환값이 없기 때문에 `future.get()`을 호출할 경우 `null`을 반환
+
+결과가 없다 뿐이지 나머지는 동일하며 작업이 완료될 때까지 요청 스레드가 블로킹 됨
+
+### ExecutorService 종료
+
+자바 19부터 `close()`가 제공
+
+### 작업 컬렉션 처리
+
+**invokeAll()**
+
+- `<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException`
+  - 모든 `Callable` 작업을 제출하고, 모든 작업이 완료될 때까지 기다림
+- `<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException`
+  - 지정된 시간 내에 모든 `Callable` 작업을 제출하고 완료될 때까지 기다림
+
+**invokeAny()**
+- `<T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException`
+  - 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환, 완료되지 않은 나머지 작업은 취소
+- `<T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException`
+  - 지정된 시간 내에 하나의 `Callable` 작업이 완료될 때까지 기다리고, 가장 먼저 완료된 작업의 결과를 반환, 완료되지 않은 나머지 작업은 취소
