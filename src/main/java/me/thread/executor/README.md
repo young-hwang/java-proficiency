@@ -1872,20 +1872,258 @@ new ThreadPoolExecutor(0, Integer.MAX_VALUE, 60L, TimeUnit,SECONDS, new Synchron
 
 # ExecutorService 전략 - 사용자 정의 풀 전략
 
+**상황1 - 점진적인 사용자 확대**
+
+- 개발한 서비스가 잘 되어서 사용자가 점점 늘어남
+
+**상황2 - 갑작스런 요청 증가**
+
+- 마케팅 팀의 이벤트가 대성고 하면서 갑자기 사용자가 폭증
+
+다음과 같은 세분화된 전략을 사용하면 상황1, 상황2를 모두 어느저도 대응할 수 있음
+
+- 일반: 일반적인 상황에는 CPU, 메모리 자원을 예측할 수 있도록 고정 크기의 스레드를 안정적으로 대응
+- 긴급: 사용자의 요청이 갑자기 증가하면 긴급하게 스레드를 추가로 투입해서 작업을 빠르게 처리
+- 거절: 사용자의 요청이 폭증해서 긴급 대응도 어렵다면 사용자의 요청을 거절
+
+이 방법은 평소에는 안정적으로 운영하다가 사용자의 요청이 갑자기 증가하면 긴급하게 스레드를 더 투입해서 급한 불을 끄는 방법
+
+물론 긴급 상황에는 CPU, 메모리 자원을 더 사용하기 때문에 적정 수준을 찾아야함
+
+일반적으로 여기까지 대응이 되겠지만 시스템이 감당할 수 없을 정도록 사용자의 요청이 폭증하면, 처리 가능한 수준의 사용자 요청만 처리하고 나머지 요청은 거절해야 함
+
+어떤 경우에도 시스템이 다운되는 최악의 상황은 피해야 함
+
+세분화 전략은 다음과 갈이 적용할 수 있음
+
+```java
+new ThreadPoolExecutor(100, 200, 60, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000));
+```
+
+- 100개의 기본 스레드를 사용
+- 추가로 긴급 대응 가능한 스레드 100개를 사용, 긴급 스레드는 60초의 생존 주기를 가짐
+- 1000개의 작업이 큐에 대기 가능
+
+> poolsize.PoolSizeMainV4 참조
+
+시나리오에 따른 확인
+
+- 일반: 1000개 이하의 작업이 큐에 담김 -> 100개의 기본 스레드가 처리
+- 긴급: 큐에 담긴 작업이 1000개를 초과 -> 100개의 기본 스레드 + 100개의 초과 스레드가 처리
+- 거절: 초과 스레드를 투입 했지만, 큐에 담긴 작업 1000개를 초과하고 또 초과 스레드도 넘어간 상황, 예외를 발생 시킴
+
+**일반 - TASK_SIZE = 1100**
+
+- 1000개 이하의 작업이 큐에 담김 -> 100개의 기본 스레드가 처리
+- 최대 1000개의 작업이 큐에 대기하고 100개의 작업이 실행중일 수 있음, 따라서 1100개 까지는 기본 스레드로 처리 가능
+- 작업을 모두 처리하는데 11초가 걸림 1100 / 100 -> 11초
+
+**긴급 - TASK_SIZE = 1200**
+
+- 큐에 담긴 작업이 1000개를 초과 -> 100개의 기본 스레드 + 100개의 초과 스레드가 처리
+- 최대 1000개의 작업이 대기하고 200개의 작업이 실행중일 수 있음
+- 작업을 모두 처리하는데 6초가 걸림  1200 / 200 = 6초
+- 긴급 투입한 스레드 덕분에 풀의 스레드 수가 2배가 됨, 따라서 작업을 2배 빠르게 처리
+- CPU, 메모리 사용을 더하기에 이런 부분을 감안하여 긴급 상황에 투입할 최대 스레드를 정함
+
+**거절 - TASK_SIZE = 1201**
+
+- 긴급 투입한 스레드로도 작업이 빠르게 소모되지 않는다는 것은, 시스템이 감당하기 어려운 많은 요청이 들어오고 있다는 의미
+- 큐에 대기하는 작업 1000개 + 스레드가 처리 중인 작업 200개 -> 총 1200개의 작업을 초과하면 예외가 발생, 따라서 1201번에서 예외 발생
+- 이런 경우 요청 거절, 고객 서비스라면 시스템에 사용자가 너무 많으니 나중에 다시 시도해 달라고 해야 함
+- 나머지 1200개의 작업은 긴급 상황과 같이 정상 처리 됨
+
+**실수에서 자주하는 실수**
+
+**참고 - 만약 다음과 같이 설정한다면?**
+
+```java
+new ThreadPoolExecutor(100, 200, 60, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
+```
+
+- 기본 스레드 100개
+- 최대 스레드 200개
+- 큐 사이즈 무한대
+
+위와 같이 설정 시 절대로 최대 사이즈 만큼 늘어나지 않음
+
+큐가 가득차야 긴급 상황으로 인지되는데 `LinkedBlockingQueue`를 기본 생성자를 통해 무한ㄷ의 사이즈로 사용하게 되면 큐가 가득찰 수 없음
+
+결국 기본 스레드 100개만으로 무한대의 작업을 처리해야 하는 문제가 발생
 
 # Executor 예외 정책
 
+결국 소비자가 처리할 수 없을 정도로 생산 요청이 가득 차면 어떻게 할지 정해야함
+
+개발자가 인지할 수 있게 로그도 남기고 사용자에게 현재 시스템에 문제가 있다고 알리는 것도 필요함
+
+이런 것을 위해 예외 정책이 필요
+
+`ThreadPoolExecutor`에 작업을 요청할 때, 큐도 가득차고, 초과 스레드도 더 할당할 수 없다면 작업을 거절
+
+`ThreadPoolExecutor`는 작업을 거절하는 다양한 정책을 제공
+
+- AbortPolicy: 새로운 작업을 제출할 때 `RejectedExecutionException`을 발생 시킴, 기본 정책
+- DiscardPolicy: 새로운 작업을 조용히 버림
+- CallerRunsPolicy: 새로운 작업을 제출한 스레드가 대신해서 직접 작업을 실행
+- 사용자정의(RejectedExecutionHandler): 개발자가 직접 정의한 거절 정책을 사용
+
+`ThreadPoolExecutor`를 `shutdown()`하면 이후에 요청하는 작업을 거절하는데 이때도 같은 정책이 적용
+
+## AbortPolicy
+
+작업이 거절되면 `RejectedExecutionException`을 던짐, 기본적으로 설정되어 있는 정책
+
+> reject/RejectMainV1 참조
+
+- `ThreadPoolExecutor` 생성자 마지막에 `new ThreadPoolExecutor.AbortPolicy()`를 제공
+- 기본 정책이기에 생략 가능
+
+**실행 결과**
+
+- task1` 은 풀의 스레드가 수행
+- `task2` 를 요청하면 허용 작업을 초과, 따라서 `RejectedExecutionException` 이 발생
+ 
+`RejectedExecutionException` 예외를 잡아서 작업을 포기하거나, 사용자에게 알리거나, 다시 시도하면 됨
+
+이렇게 예외를 잡아서 필요한 코드를 직접 구현해도 되고, 아니면 다음에 설명한 다른 정책들을 사용해도 됨
+
+**RejectedExecutionHandler**
+
+마지막에 전달한 `AbortPolicy` 는 `RejectedExecutionHandler` 의 구현체
+
+`ThreadPoolExecutor` 생성자는 `RejectedExecutionHandler` 의 구현체를 전달 받음
+
+```java
+public interface RejectedExecutionHandler {
+void rejectedExecution(Runnable r, ThreadPoolExecutor executor);
+}
+```
+
+```java
+public static class AbortPolicy implements RejectedExecutionHandler {
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        throw new RejectedExecutionException("Task " + r.toString() + " rejected from " + e.toString());
+    }
+}
+```
+
+`ThreadPoolExecutor` 는 거절해야 하는 상황이 발생하면 여기에 있는 `rejectedExecution()` 을 호출
+
+`AbortPolicy` 는 `RejectedExecutionException` 을 던지는 것을 확인
+
+## DiscardPolicy
+
+거절된 작업을 무시하고 아무런 예외도 발생시키지 않음
+
+> reject/RejectMainV2 참조
+
+**실행 결과**
+
+- `task2` , `task3` 은 거절, `DiscardPolicy` 는 조용히 버리는 정책
+
+```java
+public static class DiscardPolicy implements RejectedExecutionHandler {
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        // empty
+    }
+}
+```
+
+## CallerRunPolicy
+
+호출한 스레드가 직접 작업을 수행함
+
+이로 인해 새로운 작업을 제출하는 스레드의 속도가 느려질 수 있음
+
+> reject/RejectMainV3 참조
+
+**실행 결과**
+
+- `task1` 은 스레드 풀에 스레드가 있어서 수행
+- `task2` 는 스레드 풀에 보관할 큐도 없고, 작업할 스레드가 없어 거절해야 하나 작업을 거절하는 대신에, 작업을 요청한 스레드에 대신 일을 시킴
+- `task2` 의 작업을 `main` 스레드가 수행하는 것을 확인할 수 있음
+
+이 정책의 특징은 생산자 스레드가 소비자 대신 일을 수행하는 것도 있지만, 생산자 스레드가 대신 일을 수행하는 덕분 에 작업의 생산 자체가 느려진다는 점이다. 
+
+덕분에 작업의 생산 속도가 너무 빠르다면, 생산 속도를 조절할 수 있음
+
+원래대로 하면 `main` 스레드가 `task1` , `task2` , `task3` , `task4` 를 연속해서 바로 생산해야 함
+
+`CallerRunsPolicy` 정책 덕분에 `main` 스레드는 `task2` 를 본인이 직접 완료하고 나서야 `task3` 을 생산할 수 있음
+
+결과적으로 생산 속도가 조절
+
+```java
+public static class CallerRunsPolicy implements RejectedExecutionHandler {
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor e) {
+        if (!e.isShutdown()) {
+            r.run();
+        }
+    }
+}
+```
+
+`r.run()` 코드를 보면 별도의 스레드에서 수행하는 것이 아니라 `main` 스레드가 직접 수행하는 것을 알 수 있음
+
+참고로 `ThreadPoolExecutor` 를 `shutdown()` 을 하면 이후에 요청하는 작업을 거절하는데, 이때도 같은 정책이 적용됨
+
+그런데 `CallerRunsPolicy` 정책은 `shutdown()` 이후에도 작업을 수행해버림(호출한 스레드에서 수행하므로)
+
+따라서 `shutdown()` 조건을 체크해서 이 경우에는 작업을 수행하지 않도록함
+
+## 사용자 정의
+
+**사용자 정의(**RejectedExecutionHandler**)**: 사용자는 `RejectedExecutionHandler` 인터페이스를 구현하여 자신만의 거절 처리 전략을 정의할 수 있음
+
+이를 통해 특정 요구사항에 맞는 작업 거절 방식을 설정할 수 있음
+
+> reject/RejectMainV4 참조
+ 
+**결과 확인**
+
+- 거절된 작업을 버리지만, 대신에 경로 로그를 남겨서 개발자가 문제를 인지할 수 있도록 해보자. 
 
 # 정리
 
+**실무 전략 선택**
 
+**고정 스레드 풀 전략**: 트래픽이 일정하고, 시스템 안전성이 가장 중요
 
+**캐시 스레드 풀 전략**: 일반적인 성장하는 서비스
 
+**사용자 정의 풀 전략**: 다양한 상황에 대응
 
+**가장 좋은 최적화는 최적화하지 않는 것**
 
+많은 개발자가 미래에 발생하지 않을 일 때문에 코드를 최적화하는 경우가 많다.
 
+예를 들어서 초기 서비스이고, 아직 사용자가 많을지 예측이 되지 않는 상황인데, 코드 최적화에 너무 많은 시간을 사용할 수 있다. 
 
+이것은 사용자는 얼마 없는데 매우 비싼 서버를 구매하는 것과 같다. 
 
+물론 이 이야기가 극단적으로 최적화를 하지 말자는 말이 아니다. 
 
+예를 들어서 A와 관련된 기능을 매우 많이 최적화 했는데, 사용자가 없어서 결국 버리게 되는 경우도 있다. 
 
+반면에 별로 신경쓰지 않은 B와 관련된 기능에 사용자가 많이 늘어날 수도 있다.
 
+중요한 것은 예측 불가능한 너무 먼 미래 보다는 현재 상황에 맞는 최적화가 필요하다는 점이다.
+
+시스템의 상황을 잘 모니터링 하고 있다가, 최적화가 필요한 부분들이 발생하면, 그때 필요한 부분들을 개선하는 것이다.
+
+우리가 만든 서비스가 잘 되어서 많은 요청이 들어오면 좋겠지만, 대부분의 서비스는 트래픽이 어느정도 예측 가능하다.
+
+그리고 성장하는 서비스라도 어느정도 성장이 예측 가능하다.
+
+그래서 일반적인 상황이라면 고정 스레드 풀 전략이나, 캐시 스레드 풀 전략을 사용하면 충분하다.
+
+한번에 처리할 수 있는 수를 제안하고 안정적으로 처리하고 싶다면 고정 풀 전략을 선택하고, 사용자의 요청을 빠르게 대응하고 싶다면 캐시 스레드 풀 전략을 사용하면 된다. 
+
+물론 자원만 충분하다면 고정 풀 전략을 선택하면서 풀의 수를 많이 늘려서 사용자의 요청도 빠르게 대응하면서 안정적인 서비스 운영도 가능하다.
+
+그러다가 일반적인 상황을 벋어날 정도로 서비스가 잘 운영되면 그때 더 나은 최적화 방법을 선택하면 된다.
+
+백엔드 서버 개발자라면 시스템의 자원을 적절하게 활용하되, 최악의 경우 적절한 거절을 통해 시스템이 다운되지 않도록 해야 한다.
+
+적절한 거절은 서버도 우리의 삶에도 모두 필요하다.
