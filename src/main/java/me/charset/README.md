@@ -246,6 +246,41 @@ UTF-8을 사용하자!!
 > 참고: 한글 윈도우의 경우 기존 윈도우와 호환성 때문에 기본 인코딩을 MS949로 유지함
 > 한글 윈도우도 기본 인코딩을 UTF-8로 변경하려고 노력중
 
+# 문자 집합 조회
 
+## 사용 가능한 문자 집합 조회
 
+> encoding.AvailableCharsetsMain 참조
 
+**이용가능한 모든 문자 집합 조회**
+
+`CharSet.availableCharsets()`를 사용하면 이용가능한 모든 문자 집합을 조회할 수 있음
+
+자바가 기본으로 제공하는 문자 집합과 OS가 제공하는 문자 집합을 포함
+
+**Charset.forName()**
+
+특정 문자 집합을 지정해서 찾을 때는 `Charset.forName(...)`을 사용
+
+인자로 문자 집합의 이름이나 별칭을 사용하면됨, 대소문자 구분 없음
+
+별칭은 `aliases()` 메소드를 사용하면 구할수 있음
+
+**StandardCharsets.UTF_8**
+
+자주 사용하는 문자 집합은 `StandardCharsets`에 상수로 지정되어 있음
+
+```java
+public final class StandardCharsets {
+    public static final Charset US_ASCII = sun.nio.cs.US_ASCII.INSTANCE;
+    public static final Charset ISO_8859_1 = sun.nio.cs.ISO_8859_1.INSTANCE;
+    public static final Charset UTF_8 = sun.nio.cs.UTF_8.INSTANCE;
+    public static final Charset UTF_16BE = new sun.nio.cs.UTF_16BE();
+    public static final Charset UTF_16LE = new sun.nio.cs.UTF_16LE();
+    public static final Charset UTF_16 = new sun.nio.cs.UTF_16();
+}
+```
+
+**Charset.defaultCharset()**
+
+현재 시스템에서 사용하는 기본 문자 집할을 처리
