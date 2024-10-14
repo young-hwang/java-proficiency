@@ -1,11 +1,11 @@
-package me.file.stream.buffered;
+package me.io.buffered;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-import static me.file.stream.buffered.BufferedConst.DEFAULT_BUFFER_SIZE;
-import static me.file.stream.buffered.BufferedConst.FILE_NAME;
-import static me.file.stream.buffered.BufferedConst.FILE_SIZE;
+import static me.io.buffered.BufferedConst.DEFAULT_BUFFER_SIZE;
+import static me.io.buffered.BufferedConst.FILE_NAME;
+import static me.io.buffered.BufferedConst.FILE_SIZE;
 
 public class CreateFileV2 {
     public static void main(String[] args) throws IOException {

@@ -1,9 +1,9 @@
-package me.file.stream.buffered;
+package me.io.buffered;
 
 import java.io.FileInputStream;
 import java.io.IOException;
 
-import static me.file.stream.buffered.BufferedConst.FILE_NAME;
+import static me.io.buffered.BufferedConst.FILE_NAME;
 
 public class ReadFileV1 {
     public static void main(String[] args) throws IOException {

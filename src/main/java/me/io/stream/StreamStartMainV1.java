@@ -1,10 +1,10 @@
-package me.file.stream;
+package me.io.stream;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
-public class StreamStartMainV2 {
+public class StreamStartMainV1 {
     public static void main(String[] args) throws IOException {
         FileOutputStream fos = new FileOutputStream("temp/hello.dat");
         fos.write(65);
@@ -13,10 +13,10 @@ public class StreamStartMainV2 {
         fos.close();
 
         FileInputStream fis = new FileInputStream("temp/hello.dat");
-        int data;
-        while((data = fis.read()) != -1) {
-            System.out.println(data);
-        }
+        System.out.println(fis.read());
+        System.out.println(fis.read());
+        System.out.println(fis.read());
+        System.out.println(fis.read());
         fis.close();
     }
 }

@@ -1,11 +1,10 @@
-package me.file.stream.buffered;
+package me.io.buffered;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 
-import static me.file.stream.buffered.BufferedConst.DEFAULT_BUFFER_SIZE;
-import static me.file.stream.buffered.BufferedConst.FILE_NAME;
+import static me.io.buffered.BufferedConst.DEFAULT_BUFFER_SIZE;
+import static me.io.buffered.BufferedConst.FILE_NAME;
 
 public class ReadFileV2 {
     public static void main(String[] args) throws IOException {

@@ -1,4 +1,4 @@
-package me.file.stream.buffered;
+package me.io.buffered;
 
 public class BufferedConst {
     public static final String FILE_NAME = "temp/buffered.dat";
