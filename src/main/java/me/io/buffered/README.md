@@ -258,6 +258,95 @@ public BufferedOutputStream(OutputStream out, int size) { ... }
   - 대부분의 기능은 재정의 됨, `write()`의 경우 먼저 버퍼에 쌓이도록 재정의 됨
 - 버퍼의 크기만큼 데이터를 모아서 전달하기 때문에 빠른 속도로 데이터를 처리
 
+# 파일 입출력과 성능 최적화4 - Buffered 스트림 읽기
+
+> buffered.ReadFileV3 참조
+
+## 실행 결과
+
+```shell
+File name: temp/buffered.dat
+File size: 10MB
+Time take: 146ms
+```
+
+- 예제1 이 약 5초 정도 걸렸으나 약 50배 정도 빨라진걸 확인
+- 예제2 보다 느림
+
+## BufferedInputStream 분석**
+
+- `BufferedInputStream`은 `InputStream` 상속 
+- `InputStream`과 같은 기능을 그대로 사용
+
+**BufferedInputStream 실행 순서**
+
+- `read()` 호출
+- 버퍼의 크기는 3이라고 가정
+
+- `read()`는 1byte 만 조회
+- `BufferedInputStream`은 먼저 버퍼를 확인, 버퍼에 데이터가 없으므로 데이터를 불러옴
+- `BufferedInputStream`은 `FileInputStream`에 `read(byte[])`를 사용해서 버퍼의 크기인 3byte의 데이터를 불러옴
+- 불러온 데이터를 버퍼에 보관
+
+- 버퍼에 있는 데이터를 하나 반환
+
+**정리**
+
+- `BufferedInputStream`은 버퍼의 크기만큼 데이터를 미리 읽어서 버퍼에 보관
+- 따라서 `read()`를 통해 1byte 데이터를 조회해서 성능이 최적화 됨
+
+## 버퍼를 직접 다루는 것보다 BufferedXxx의 성능이 떨어지는 이유
+
+- 예제1 쓰기: 14000ms(14초)
+- 예제2 쓰기: 14ms(버퍼 직접 다룸)
+- 예제3 쓰기: 102ms(BufferedXxx)
+
+예제2는 버퍼를 직접 다루는 것이고, 예제3은 `BufferedXxx`라는 클래스가 대신 버퍼를 처리함
+
+예제2와 예제3은 비슷한 성능이 나와야하는데 왜 예제2가 더 빠른가?
+
+**BufferedOutputStream.write()**
+
+```java
+@Override
+public void write(int b) throws IOException {
+    if (lock != null) {
+        lock.lock();
+        try {
+            implWrite(b);
+        } finally {
+            lock.unlock();
+        }
+    } else {
+        synchronized (this) {
+            implWrite(b);
+        }
+    }
+}
+```
+
+- `BufferedOutputStream`을 포함한 `BufferedXxx`클래스는 모두 동기화 처리가 되어 있음
+- 예제는 1byte 씩 저장해서 총 10MB를 저장해야 하는데 이럴 경우 `write()`를 약 1000만번 호출 해야함
+- 결과적으로 락을 걸고 푸는 코드도 1000만번 호출된다는 의미
+
+**BufferedXxx 클래서의 특징**
+
+`BufferedXxx` 클래스는 자바 초창기에 만들어진 클래스로 처음부터 멀티 스레드를 고려해서 만든 클래스임
+
+따라서 멀티 스레드에 안전하지만 락을 푸는 동기화 코드로 인해 약간 성능저하가 될 수 있음
+
+하지만 싱글 스레드 상황에서는 동기화 락이 필요하지 않기 때문에 직접 버퍼와 다룰 때와 비교해서 성능이 떨어짐
+
+일반적인 상황이라면 이 정도 성능은 크게 문제가 되지는 않기 때문에 싱글 스레드여도 `BufferedXxx`를 사용하면 충분
+
+매우 큰 데이터를 다루어야 하고, 성능 최적화가 중요하다면 예제2와 같이 직접 버퍼를 다루는 방법도 고려
+
+동기화 락이 없는 `BufferedXxx` 클래스는 없음
+
+꼭 필요한 상황이라면 `BufferedXxx`를 참고해서 동기화 락 코드를 제거한 클래스를 직접 만들어 사용
+
+
+
 
 
 
