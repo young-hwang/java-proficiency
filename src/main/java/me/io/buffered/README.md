@@ -345,6 +345,39 @@ public void write(int b) throws IOException {
 
 꼭 필요한 상황이라면 `BufferedXxx`를 참고해서 동기화 락 코드를 제거한 클래스를 직접 만들어 사용
 
+# 파일 입출력과 성능 최적화5 - 한번에 쓰기
+
+## 예제4 - 쓰기
+
+파일의 크기가 크지 않다면 간단하게 한번에 쓰고 읽는 것도 좋은 방법임
+
+성능은 가장 빠르지만 결과적으로 메모리를 한번에 많이 사용하기 때문에 파일의 크기가 작아야함
+
+> buffered/CreateFileV4 참조
+
+**실행 결과**
+
+```java
+File created: temp/buffered.dat
+File size: 10MB
+Time take: 8ms
+```
+
+- 실행 시간은 8kb의 버퍼를 직접 사용한 예제2와 오차범위로 거의 비슷함
+- 디스크나 파일 시스템에서 데이터를 읽고 쓰는 기본 단위가 보통 4kb 또는 8kb이기 때문, 한번에 쓴다고 무작정 빠른건 아님
+
+## 예제4 - 읽기
+
+> buffered/ReadFileV4 참조
+
+```java
+File name: temp/buffered.dat
+File size: 10MB
+Time take: 10ms
+```
+
+- 실행 시간은 8kb의 버퍼를 사용한 예제2와 오차 범위 정도로 비슷함
+- `readAllBytes()`는 자바 구현에 따라 다르지만 보통 4kb, 8kb, 16kb 단위로 데이터를 읽어들임
 
 
 
