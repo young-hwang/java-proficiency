@@ -283,7 +283,7 @@ public final class StandardCharsets {
 
 **Charset.defaultCharset()**
 
-현재 시스템에서 사용하는 기본 문자 집할을 처리
+현재 시스템에서 사용하는 기본 문자 집합을 처리
 
 # 문자 인코딩 예제 1
 
