@@ -208,5 +208,20 @@ public FileReader(String fileName, Charset charset) throws IOException {
 
 **참고: 문자 집합을 생략하면 시스템 기본 문자 집합이 사용**
 
+# 문자 다루기4 - BufferedReader
+
+`BufferedOutputStream`, `BufferedInputStream`과 같이 `Reader`, `Writer`에도 보퍼 보조 기능을 제공하는 `BufferedReader`, `BufferedWriter` 클래스 존재
+
+추가로 문자를 다룰 때는 한 줄(라인)단위로 다룰 때가 많음, `BufferedReader`는 한줄 단위로 문자를 읽는 기능 제공
+
+> text.ReaderWriterMainV4 참조
+
+**br.readLine()**
+
+- 한 줄 단위로 문자를 읽고 `String` 반환
+- 파일의 끝(EOF)에 도달하면 `null`을 반환
+  - 반환 타입이 `String`이기 때문에 EOF를 -1로 표현할 수 없음, 대신 `null` 반환
+
+
 
 
