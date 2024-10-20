@@ -69,5 +69,144 @@ String 문자를 스트림을 통해 파일에 저장하려면 String을 byte로
 
 어떻게 가능한가?
 
+# 문자 다루기3 - Reader, Writer
+
+자바는 byte를 다루는 I/O 클래스와 문자를 다루는 I/O 클래스 둘로 나뉨
+
+**byte를 다루는 클래스**
+
+```mermaid
+classDiagram
+    class OutputStream {
+        write(int)
+        write(byte[])
+    }
+    class FileOutputStream
+    class ByteArrayOutputStream
+    class BufferedOutputStream
+    
+    OutputStream <|-- FileOutputStream
+    OutputStream <|-- ByteArrayOutputStream
+    OutputStream <|-- BufferedOutputStream
+```
+
+```mermaid
+classDiagram
+    class InputStream {
+        read(): int(byte)
+        read(byte[])
+        readAllbytes()
+    }
+    class FileInputStream
+    class ByteArrayInputStream
+    class BufferedInputStream
+
+    InputStream <|-- FileInputStream
+    InputStream <|-- ByteArrayInputStream
+    InputStream <|-- BufferedInputStream
+```
+
+**문자를 다루는 클래스**
+
+```mermaid
+classDiagram
+    class Writer {
+        write(String)
+        write(char[])
+    }
+    class OutputStreamWriter
+    class BufferedWriter
+    class FileWriter
+    Writer <|-- OutputStreamWriter
+    Writer <|-- BufferedWriter
+    OutputStreamWriter <|-- FileWriter
+```
+
+```mermaid
+classDiagram
+  class Reader {
+    read(): int(char)
+    read(char[])
+  }
+  class InputStreamReader
+  class BufferedReader
+  class FileReader
+  Reader <|-- InputStreamReader
+  Reader <|-- BufferedReader
+  InputStreamReader <|-- FileReader
+```
+
+- byte를 다루는 클래스는 `OutputStream`, `InputStream`의 자식임
+  - 부모 클래스의 기본 기능도 byte 단위를 다룸
+  - 클래스 이름 마지막에 보통 `OutputStream`, `InputStream`이 붙음
+- 문자를 다루는 클래스는 `Writer`, `Reader`의 자식
+  - 부모 클래스의 기본 기능은 `String`, `char` 같은 문자를 다룸
+  - 클래스 이름 마지막에 보통 `Writer`, `Reader`가 붙음
+
+`OutputStreamWriter`는 바로 문자를 다루는 `Writer` 클래스의 자식임, 따라서 `write(String)`이 가능한 것
+
+`OutputStreamWriter`는 문자를 받아서 `byte`로 변경한 다음 `byte`를 다루는 `OutputStream`으로 데이터를 전달하였던 것
+
+> 꼭 기억해야할 중요한 사실은 모든 데이터는 byte단위(숫자)로 저장됨
+> 따라서 `Writer`가 아무리 문자를 다룬다고 해도 문자를 바로 저장할 수는 없음
+> 클래스에서 문자를 전달하면 결과적으로 내부에서는 지정된 문자 집합을 사용해서 문자를 byte로 인코딩해서 저장
+
+> text.ReaderWriterMainV3 참조
+
+**new FileWriter(FILE_NAME, UTF_8)**
+
+- `FileWriter`에 파일명과 문자 집합(인코딩 셋)을 전달
+- `FileWriter`는 사실 내부에서 스스로 `FileOutputStream`을 하나 생성해서 사용
+- 모든 데이터는 `byte` 단위로 저장
+
+```java
+public FileWriter(String fileName, Charset charset) throws IOException {
+    super(new FileOutputStream(fileName), charset);
+}
+```
+
+**fw.write(writeString)**
+
+- 이 메서드를 사용하면 문자를 파일에 직접 쓸 수 있음(실제 그런것은 아님)
+- 문자를 쓰면 `FileWriter` 내부에서 인코딩 셋을 사용해서 문자를 byte로 변경 후, `FileOutputStream`을 사용해서 파일에 저장
+- 개발자가 느끼기에 문자를 직접 파일에 쓰는 것 처럼 느껴지지만, 실제로는 내부에서 문자를 byte로 변환함
+
+**new FileReader(FILE_NAME, UTF_8)**
+
+- `FileWriter`와 같은 방식으로 작동
+- 내부에서 `FileInputStream`를 생성해서 사용
+
+```java
+public FileReader(String fileName, Charset charset) throws IOException {
+  super(new FileInputStream(fileName), charset);
+}
+```
+
+`ch = fr.read()`
+
+- 데이터를 읽을 때도 내부에서는 `FileInputStream`을 사용해서 데이터를 byte 단위로 읽어들임, 문자 집합을 사용하여 `byte[]`을 `char`로 디코딩
+
+**FileWriter와 OutputStreamWriter**
+
+`FileWriter` 코드와 앞서 작성한 `OutputStreamWriter`를 사용한 코드가 뭔가 비슷하다는 점을 알 수 있음
+
+이전 코드에서는 `FileOutputStream`을 직접생성했으나 `FileWriter`는 생성자 내부에서 대신 `FileOutputStream`을 생성
+
+`FileWriter`는 `OutputStreamWriter`을 상속
+
+생성자에서 개발자 대신 `FileInpustStream`을 생성해주는 일만 대시 처리
+
+`FileWriter`는 `OutputStreamWriter`를 조금 편리하게 사용하도록 도움
+
+**정리**
+
+`Writer`, `Reader` 클래스를 사용하면 바이트 변환 없이 문자를 직접 다룰 수 있어서 편리
+
+실제로는 내부에서 byte로 변환해서 저장한다는 점을 기억(모든 데이터는 바이트 단리위로 다룸, 문자를 직접 저장 X)
+
+문자를 byte로 변경하려며 항상 문자 집합(인코딩 셋이 필요)
+
+**참고: 문자 집합을 생략하면 시스템 기본 문자 집합이 사용**
+
 
 
