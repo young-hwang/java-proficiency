@@ -5,7 +5,8 @@ import java.util.Scanner;
 
 public class MemberConsoleMain {
 //    private static final MemberRepository memoryMemberRepository = new MemoryMemberRepository();
-    private static final MemberRepository memoryMemberRepository = new FileMemberRepository();
+//    private static final MemberRepository memoryMemberRepository = new FileMemberRepository();
+    private static final MemberRepository memoryMemberRepository = new DataMemberRepository();
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
