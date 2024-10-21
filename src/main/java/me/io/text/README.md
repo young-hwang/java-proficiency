@@ -222,6 +222,40 @@ public FileReader(String fileName, Charset charset) throws IOException {
 - 파일의 끝(EOF)에 도달하면 `null`을 반환
   - 반환 타입이 `String`이기 때문에 EOF를 -1로 표현할 수 없음, 대신 `null` 반환
 
+# 기타 스트림
+
+몇가지 유용한 부가 기능을 제공하는 `PrintStream`, `DataOutputStream`
+
+## PrintStream
+
+`PrintStream`은 우리가 자주 사용해왔던 바로 `System.out`에서 사용되는 스트림
+
+`PrintStream`과 `FileOutputStream`을 조합하면 마치 콘솔에 출력하듯이 파일에 축렬할 수 있음
+
+> text.PrintStreamEtcMain 참조
+
+`PrintStream`의 생성자에 `FileOutputStream`을 전달함
+
+스트림을 통해서 나가는 출력은 파일에 저장됨
+
+마치 콘술에 출력하는 것 처럼 파일이나 다른 스트림에 문자를 출력
+
+## DataOutputStream
+
+`DataOutputStream`을 사용하면 자바의 `String`, `int`, `double`, `boolean` 같은 데이터 형을 편리하게 다룰 수 있음
+
+> text.DataOutputStream 참조
+
+자바 데이터 타입을 사용하면서 데이터를 편리하게 저장하고 불러오는 것을 확인
+
+스트림 사용시 주의할 점은 반드시 저장한 순서대로 읽어야함
+
+`data.dat`파일을 열어보면 제대로 보이지 않음
+
+왜냐면 `writeUTF()`의 경우 UTF-8 형식으로 저장하지만 나머지의 경우 문자가 아니라 각 타입에 맞는 byte 단위로 저장하기 때문임
+
+텍스트 편지기는 자신의 문자 집합을 사용해서 byte를 문자로 표현하려고 시도하지만 문자 집합에 없는 단어이거나 또는 전혀 예상하지 않은 문자로 디코딩 됨
+
 
 
 
