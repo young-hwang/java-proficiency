@@ -218,3 +218,91 @@ public class MemoryMemberRepository implements MemberRepository {
 단순하게 회원 객체를 그대로 자바 컬렉션에 보관하면 됨, 조회할 때도 마찬가지
 
 이렇게 편리하게 회원 객체를 저장할 수 있는 방법은 없을까?
+
+# 회원 관리 예제4 - ObjectStream
+
+회원 인스턴스도 결국 메모리 어딘가에 보관되어 있음
+
+메모리에 보관되어 있는 객체를 읽어서 파일에 저장하기만 하면 아주 간단히 회원 인스턴스를 저장할 수 있음
+
+## 객체 직렬화
+
+자바 객체 직렬화(Serialization)는 메모리에 있는 객체 인스턴스를 바이트 스트림으로 변환하여 파일에 저장하거나 네트워크를 통해 전송할 수 있는 기능
+
+이 과정에서 객체의 상태를 유지하여 나중에 역직렬화(Deserialization)을 통해 원래의 객체로 복원할 수 있음
+
+객체 직렬화를 사용하려면 직렬화하려는 클래스는 반드시 `Serializable` 인터페이스를 구현해야함
+
+### Serializable 인터페이스
+
+```java
+package java.io;
+
+public interface Serializable {
+}
+```
+
+- 이 인터페이스에는 아무런 기능이 없음, 단지 직렬화 가능한 클래스라는 것을 표시하기 위한 인터페이스
+- 메서드 없이 단지 표시가 목적인 인터페이스를 마커 인터페이스라함
+
+### Member - Serializable 추가
+
+> application.Member 참조
+
+**실행 결과 - temp/members-obj.dat**
+
+파일이 정상 보관, 문자와 byte가 섞여 있음
+
+**직렬화**
+
+- `ObjectOutputStream` 를 사용하면 객체 인스턴스를 직렬화해서 byte로 변경할 수 있음
+- 우리는 회원 객체 하나가 아니라 회원 목록 전체를 파일에 저장해야 하므로 `members` 컬렉션을 직렬화 해야함
+- `oos.writeObject(members)` 를 호출하면 `members` 컬렉션과 그 안에 포함된 `Member` 를 모두 직렬화해 서 byte로 변경함, `oos` 와 연결되어 있는 `FileOutputStream` 에 결과를 출력
+
+참고로 `ArrayList` 도 `java.io.Serializable` 을 구현하고 있어서 직렬화 할 수 있음
+
+```java
+public class ArrayList<E> extends AbstractList<E>
+implements List<E>, RandomAccess, Cloneable, java.io.Serializable {...}
+```
+
+**temp/members-obj.dat 결과**
+
+```
+??srjava.util.ArrayListx????a?Isizexpwsrio.member.Member????0RMLagetLjava/
+lang/Integer;LidtLjava/lang/String;Lnameq~xpsrjava.lang.Integer⠤???
+8Ivaluexrjava.lang.Number???
+???xptid1tname1sq~sq~tid2tname2x
+```
+
+직렬화를 하면 문자와 byte 정보가 섞여 있음
+
+잘 보면 `ArrayList` , `Member` 같은 클래스 정보도 함께 저장되는 것을 확인 가능
+
+**역직렬화**
+
+`ObjectInputStream` 을 사용하면 byte를 역직렬화 해서 객체 인스턴스로 만들어 수 있음
+
+`Object findObject = ois.readObject()` 를 사용하면 역직렬화 가능, 이때 반환 타입이 `Object` 이므로 캐스팅해서 사용해야 함
+
+**정리**
+
+객체 직렬화 덕분에 객체를 매우 편리하게 저장하고 불러올 수 있음
+
+객체 직렬화를 사용하면 객체를 바이트로 변환할 수 있어, 모든 종류의 스트림에 전달할 수 있음
+
+이는 파일에 저장하는 것은 물론, 네트워크를 통해 객체를 전송하는 것도 가능하게 함
+
+이러한 특성 때문에 초기에는 분산 시스템에서 활용 되었음
+
+객체 직렬화는 1990년대에 등장한 기술로, 초창기에는 인기가 있었지만 시간이 지나면서 여러 단점이 드러났음
+
+또한 대안 기술이 등장하면서 점점 그 사용이 줄어들게 되었고, 현재는 객체 직렬화를 거의 사용하지 않음
+
+> 참고
+> 객체 직렬화 관련해서 다음과 같이 더 학습할 내용들이 있음
+> 하지만 현대에는 객체 직렬화를 잘 사용하지 않으므로 이런 것이 있다는 것 정도만 알아두고 넘어감
+> - `serialVersionUID` : 객체 직렬화 버전을 관리
+> - `transient` 키워드: `transient` 가 붙어있는 필드는 직렬화 하지 않고 무시
+
+
