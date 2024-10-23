@@ -1,4 +1,4 @@
-package me.nio;
+package me.io.file.nio;
 
 import java.io.File;
 import java.io.FileInputStream;
