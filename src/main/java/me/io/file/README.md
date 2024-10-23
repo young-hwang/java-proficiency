@@ -74,3 +74,32 @@ mkdir() 메소드는 디렉토리를 하위 디렉토리 하나만 만든다.
 
 > io.NewFilesMain 참조
 
+# 경로 표시
+
+## File 경로 표시
+
+> io.OldFilePathMain 참조
+
+**절대 경로(Absolute path)**: 절대 경로는 경로의 처음부터 내가 입력한 모든 경로를 다 표현
+
+**정규 경로(Canonical path)**: 경로의 계산이 모두 끝난 경로이다. 정규 경로는 하나만 존재
+
+예제에서 `..` 은 바로 위의 상위 디렉토리를 뜻함, 이런 경로의 계산을 모두 처리하면 하나의 경로만 남음
+
+예를 들어 절대 경로는 다음 2가지 경로가 모두 가능하지만
+
+`/Users/yh/study/inflearn/java/java-adv2`
+
+`/Users/yh/study/inflearn/java/java-adv2/temp/..`
+
+정규 경로는 다음 하나만 가능
+
+`/Users/yh/study/inflearn/java/java-adv2`
+
+**file.listFiles()**
+
+현재 경로에 있는 모든 파일 또는 디렉토리를 반환
+파일이면 F, 디렉토리면 D로 표현
+
+> io.NewFilePathMain 참조
+
