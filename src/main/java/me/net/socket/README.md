@@ -94,3 +94,42 @@ TCP와 다르게 DatagramSocket 클래스에서 보내는 역할과 받는 역�
 | DatagramPacket(byte[] buf, int offset, int length, InetAddress address, int port) | 버퍼의 offset이 할당되어 있고, 지정된 address와 port로 데이터를 전송하기 위한 객체 생성 |
 | DatagramPacket(byte[] buf, int offset, int length, InetAddress address)           | 버퍼의 offset이 할당되어 있고, 지정된 소켓 address로 데이터를 전송하기 위한 객체 생성    |
 | DatagramPacket(byte[] buf, int length, SocketAddress address)                     | 지정된 소켓 address로 데이터를 전송하기 위한 객체 생성                         |
+
+# 네트워크 프로그램1 
+
+## 네트워크 프로그램 - 예제 1
+
+자바 네트워크 프로그램 작성
+
+TCP/IP 로 작성 예정
+
+> net.socket.ClientV1
+> net.socket.ServerV1
+
+**Server Log**
+
+```shell
+01:25:07.927 [     main] Start Server
+01:25:07.939 [     main] Server Socket Listening Port: 12345
+01:25:13.599 [     main] Connect Socket Socket[addr=/127.0.0.1,port=61051,localport=12345]
+01:25:13.600 [     main] server <- client: Hello
+01:25:13.601 [     main] server -> client: Hello World
+01:25:13.601 [     main] close connection: Socket[addr=/127.0.0.1,port=61051,localport=12345]
+```
+
+**Client Log**
+
+```shell
+01:25:13.584 [     main] Start Client
+01:25:13.598 [     main] Connect Socket: Socket[addr=localhost/127.0.0.1,port=12345,localport=61051]
+01:25:13.599 [     main] client -> server: Hello
+01:25:13.601 [     main] client <- server: Hello World
+01:25:13.601 [     main] close connectionSocket[addr=localhost/127.0.0.1,port=12345,localport=61051]
+```
+
+- `localhost` 는 현재 사용 중인 컴퓨터 자체를 가리키는 특별한 호스트 이름임
+  - `google.com` , `naver.com` 과 같은 호스트 이름이지만, 자기 자신의 컴퓨터를 뜻하는 이름
+- `localhost` 는 127.0.0.1이라는 IP로 매핑됨
+-  127.0.0.1은 IP 주소 체계에서 루프백 주소(loopback address)로 지정된 특별한 IP 주소, 이 주소는 컴퓨터가 스스로를 가리킬 때 사용되며, "localhost"와 동일하게 취급
+-  127.0.0.1은 컴퓨터가 네트워크 인터페이스를 통해 외부로 나가지 않고, 자신에게 직접 네트워크 패킷을 보낼 수 있도록함
+
