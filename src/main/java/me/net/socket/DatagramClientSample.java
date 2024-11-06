@@ -1,4 +1,4 @@
-package me.socket;
+package me.net.socket;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
