@@ -133,3 +133,68 @@ TCP/IP 로 작성 예정
 -  127.0.0.1은 IP 주소 체계에서 루프백 주소(loopback address)로 지정된 특별한 IP 주소, 이 주소는 컴퓨터가 스스로를 가리킬 때 사용되며, "localhost"와 동일하게 취급
 -  127.0.0.1은 컴퓨터가 네트워크 인터페이스를 통해 외부로 나가지 않고, 자신에게 직접 네트워크 패킷을 보낼 수 있도록함
 
+## 네트워크 프로그램1 - 분석
+
+TCP/IP 통신에서는 통신할 대상 서버를 찾을 때 호스트 이름이 아니라, IP 주소가 필요함
+
+네트워크 프로그램을 분석하기 전에 먼저 호스트 이름으로 IP를 어떻게 찾는지 확인해봄
+
+> net.socket.InetAddressMain 참조
+
+```shell
+localhost/127.0.0.1
+google.com/142.251.42.142
+```
+
+`InetAddress` 클래스를 사용하면 호스트 이름으로 대상 IP를 찾을수 있음
+
+1. `InetAddress.getByName("호스트명")` 메소드를 사용해서 해당 IP 주소를 조회
+2. 이 과정에서 시스템의 호스트 파일을 먼저 확인
+   - `/etc/hosts`(리눅스, mac)
+   - `C:\Windows\System32\drivers\etc\hosts`(Windows)
+3. 호스트 파일에 정의되어 있지 않다면 DNS 서버에 요청해서 IP 주소를 획득
+
+만약 호스트 파일에 `localhost`가 없다면 `127.0.0.1 localhost`를 추가하거나 또는 `127.0.0.1`과 같은 IP를 직접 사용하면 됨
+
+### 클라이언트 코드 분석
+
+**클라이언트와 서버의 연결은 Socket을 사용**
+
+```java
+Socket socket = new Socket("localhost", PORT);
+```
+
+- `localhost`를 통해 자신의 컴퓨터에 있는 12345 포트에 TCP 접속을 시도
+  - `localhost`는 IP가 아니므로 해당하는 IP를 먼저 찾음, 내부에서 `InetAddress`를 사용
+  - `localhost`는 127.0.0.1이라는 IP에 매핑
+  - `127.0.0.1:12345`에 TCP 접속을 시도
+- 연결에 성공적으로 완료되면 `Socket` 객체를 반환
+- `Socket`은 서버와 연결되어 있는 연결점이라고 생각하면 됨
+- `Socket` 객체를 통해서 서버와 통신할 수 있음
+
+**클라이언트와 서버간의 데이터 통신은 Socket이 제공하는 스트림을 사용**
+
+```java
+DataInputStream input = new DataInputStream(socket.getInputStream);
+DataOutputStream output = new DataOutputStream(socket.getOutputStream);
+```
+
+- `Socket`은 서버와 데이터를 주고 받기 위한 스트림을 제공
+- `InputStream`: 서버에서 전달한 데이터를 클라이언트가 받을 때 사용
+- `OutputStream`: 클라이언트에서 서버에 데이터를 전달할 때 사용
+- `InputStream`, `OutputStream`을 그대로 사용하면 모든 데이터를 byte로 변환해서 전달해야 하므로 `DataInputStream`, `DataOutputStream` 이라는 보조 스트림 사용
+
+```java
+// 서버에게 문자 보내기
+String toSend = "Hello";
+output.writeUTF(toSend);
+```
+
+- `OutputStream`을 통해 서버에 "Hello" 메시지를 전송
+
+```java
+// 서버에게 문자 보내기
+String toSend = "Hello";
+output.writeUTF(toSend);
+```
+
