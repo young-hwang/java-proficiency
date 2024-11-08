@@ -193,8 +193,85 @@ output.writeUTF(toSend);
 - `OutputStream`을 통해 서버에 "Hello" 메시지를 전송
 
 ```java
-// 서버에게 문자 보내기
-String toSend = "Hello";
-output.writeUTF(toSend);
+// 서버로 부터 문자 받기
+String received = input.readUTF();
 ```
+
+- `InputSteram`을 통해 서버가 전달한 메시지를 받음
+- 클라이언트가 "Hello"를 전송하면 서버는 "World!"라는 문제를 붙이서 반환하므로 "Hello World!"라는 문자를 반환 받음
+
+**사용한 자원은 반드시 정리해야함**
+
+- 시스템 자원 해제: InputStream과 OutputStream은 파일, 네트워크 소켓, 또는 기타 외부 자원을 다루기 때문에, 스트림이 닫히지 않으면 해당 자원이 해제되지 않고 남아 있을 수 있음. 이런 자원 누수는 결국 메모리 문제나 파일 핸들 제한에 도달하는 문제를 일으킬 수 있음
+- 버퍼 비우기: OutputStream의 경우, 데이터를 버퍼에 저장한 후 한꺼번에 쓰는 경우가 많음. close()를 호출하지 않으면 버퍼에 남아 있는 데이터가 전송되지 않을 수 있음. close()는 버퍼를 비우고 모든 데이터를 전송한 후 스트림을 닫음.
+- 안전한 사용 종료: 파일이나 네트워크 스트림은 동시에 여러 프로세스가 접근할 수 없음. 따라서 스트림을 열고 사용을 완료한 후에는 close()를 호출하여 다른 프로세스가 해당 자원에 접근할 수 있도록 해야함.
+- 예외 처리를 통한 안전성 확보: 자바에서는 try-with-resources 구문을 사용해 스트림을 자동으로 닫도록 권장함. 이를 통해 예외가 발생하더라도 스트림이 닫히는 것을 보장할 수 있음.
+
+### 서버 코드 분석
+
+**서버 소켓**
+
+서버는 특정 포트를 열어두어야함. 그래야 클라이언트가 해당 포트를 지정해서 접속할 수 있음.
+
+```java
+ServerSocket serverSocket = new ServerSocket(PORT);
+```
+
+- 서버는 서버 소켓(ServerSocket)이라는 특별한 소켓을 사용
+- 지정한 포트를 사용해서 서버 소켓을 생성하면 클라이언트는 해당 포트로 서버에 연결할 수 있음
+
+클라이언트와 서버의 연결 과정을 살펴봄
+
+- 서버가 12345 포트로 서버 소켓을 열어둠. 클라이언트는 이제 12345 포트로 서버에 접속할 수 있음
+- 클라이언트가 12345 포트에 연결을 시도
+- 이때 OS 계층에서 TCP 3-way handshake가 발생하고 TCP 연결이 완료됨
+- TCP 연결이 완료되면 서버는 OS backlog queue라는 곳에 클라이언트와 서버의 TCP 연결 정보를 보관
+  - 이 연결 정보를 보면 클라이언트의 IP, PORT, 서버의 IP, PORT 정보가 모두 들어있음
+
+**클라이언트와 랜덤 포트**
+
+TCP 연결시에는 클라이언트 서버 모두 IP, 포트 정보가 필요함
+
+- 클라이언트: localhost(127.0.0.1), 50000(포트 랜덤 생성)
+- 서버: localhost(127.0.0.1), 12345
+
+클라이언트는 자신의 포트를 지정하지 않지만 서버의 경우 포트가 명확하게 지정되어야 함
+
+그래야 서버에 어떤 포트로 접속할지 알 수 있음
+
+반면 서버에 접속하는 클라이언트의 경우 자신의 포트가 명확하게 지정되어 있지 않아도 됨
+
+클라이언트는 보통 포트를 생략, 생략할 경우 클라이언트 PC에 남아 있는 포트 중 하나가 랜덤으로 할당됨(클라이언트 포트도 명시적으로 할당 가능함)
+
+**accept()**
+
+```java
+Socket socket = serverSocket.accept();
+```
+
+- 서버 소켓은 단지 클라이언트와 서버의 TCP 연결만 지원하는 특별한 소켓임
+- 실제 클라이언트와 서버가 정보를 주고 받으려면 Socket 객체가 필요(ServerSocket이 아님)
+- `serverSocket.accept()` 메소드를 호출하면 TCP 연결 정보를 기반으로, `Socket` 객체를 만들어서 반환
+
+`accept()` 호출 과정을 살펴봄
+
+- `accept()`를 호출하면 backlog queue에서 TCP 연결 정보를 조회
+  - 만약 TCP 연결 정보가 없다면, 연결 정보가 생성될 때가지 대기(블로킹)
+- 해당 정보를 기반으로 `Socket` 객체를 생성
+- 사용한 TCP 연결 정보는 backlog queue에서 제거됨
+
+**Socket 생성 후**
+
+- 클라이언트와 서버의 `Socket`은 TCP로 연결되어 있고, 스트림을 통해 메시지를 주고 받을 수 있음
+
+```java
+DataInputStream input = new DataInputStream(socket.getInputStream());
+DataOutputStream output = new DataOutputStream(socket.getOutputStream());
+```
+
+- `Socket`은 클라이언트와 서버가 데이터를 주고 받기 위한 스트림을 제공
+- `InputStream`: 서버 입장에서 보면 클라이언트가 전달한 데이터를 서버가 받을 때 사용
+- `OutputStream`: 서버에서 클라이언트에 데이터를 전달할 때 사용
+
+클라이언트의 Output은 서버의 Input이고 반대로 서버의 Output은 클라이언트의 Input
 
