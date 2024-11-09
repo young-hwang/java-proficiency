@@ -275,3 +275,27 @@ DataOutputStream output = new DataOutputStream(socket.getOutputStream());
 
 클라이언트의 Output은 서버의 Input이고 반대로 서버의 Output은 클라이언트의 Input
 
+## 네트워크 프로그램2 - 예제
+
+클라이언트와 서버가 메세지를 계속 주고 받다가 "bye"라고 입력하면 클라이언트와 서버를 종료
+
+> net.socket.ClientV2 참조
+> net.socket.ServerV2 참조
+
+**문제**
+
+서버는 하나의 클라이언트가 아니라, 여러 클라이언트의 연결을 처리할 수 있어야함
+
+새로운 클라이언트가 접속하면 정상 수행되지 않음
+
+```shell
+16:37:49.243 [     main] Start Client
+16:37:49.257 [     main] Connect Socket: Socket[addr=localhost/127.0.0.1,port=12345,localport=64975]
+Send Message: dt
+16:38:14.294 [     main] client -> server: dt
+```
+
+소켓은 연결 되었지만 메시지를 전송해도 서버로 부터 아무런 응답이 없음
+
+
+
