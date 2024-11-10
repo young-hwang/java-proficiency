@@ -388,6 +388,79 @@ while(true) {
 }
 ```
 
+## 네트워크 프로그램3
+
+여러 클라이언트가 동시에 접속할 수 있는 서버 프로그램 작성
+
+- 서버의 `main` 스레드는 서버 소켓을 생성하고, 서버 소켓의 `accept()`를 반복해서 호출
+- 클라이언트가 서버에 접속하면 서버 소켓의 `accept()` 메소드가 `Socket`을 반환
+- `main` 스레드는 이 정보를 기반으로 `Runnable`을 구현한 `Session`이라는 별도의 객체를 만들고, 새로운 스레드에서 객체를 실행함. `Thread-0`이 `Session`을 실행.
+- `Session` 객체와 `Thread-0`은 연결된 클라이언트와 메시지를 주고 받음
+- 새로운 TCP 연결이 발생하면 `main` 스레드는 새로운 `Session` 객체를 별도의 스레드에서 실행함. 그리고 이과정을 반복함
+- `Session` 객체와 `Thread-0`은 연결된 클라이언트와 메시지를 주고 받음
+
+### 역할의 분리
+
+- `main` 스레드
+  - `main` 스레드는 새로운 연결이 있을 때 마다 `Session` 객체와 별도의 스레드를 생성하고, 별도의 스레드가 `Session`객체를 실행하도록함
+- `Session` 담당 스레드
+  - `Session`을 담당하는 스레드는 자신의 소켓이 연결된 클라이언트와 메시지를 반복해서 주고 받는 역할을 담당함
+
+> net.socket.ClientV3 참조
+> net.socket.ServerV3 참조
+
+- `Session` 클래스의 목적은 소켓이 연결된 클라이언트와 메시지를 반복해서 주고 받는 것임
+- 생성자를 통해 `Socket` 객체를 입력 받음
+- `Runnable`을 구현해 별도의 스레드에서 실행
+
+- main 코드는 `main` 스레드가 작동하는 부분
+- `main` 스레드는 서버 소켓을 생성하고, `serverSocket.accept()`을 호출해서 연결을 대기함
+- 새로운 연결이 추가될 때 마다 `Session` 객체를 생성하고 별도의 스레드에서 `Session` 객체를 실행
+- 이 과정을 반복
+
+여러 서버가 접속해도 문제없이 작동하는 것을 확인
+
+서버 소켓을 통해 소켓을 연결하는 부분과 각 클라이언트와 메시지를 주고 받는 부분이 별도의 스레드로 나뉘어 있음
+
+블로킹 되는 부분은 이렇게 별도의 스레드로 나누어 실행됨
+
+### 문제
+
+여기서 실행 중인 클라이언트를 IntelliJ의 빨간색 Stop 버튼을 눌러서 직접 종료한다면
+
+```java
+01:02:45.386 [     main] Start Server
+01:02:45.393 [     main] Server Socket Listening Port: 12345
+01:02:49.580 [     main] Connect Socket Socket[addr=/127.0.0.1,port=59695,localport=12345]
+Exception in thread "Thread-0" java.lang.RuntimeException: java.io.EOFException
+	at me.net.socket.ServerV3$Session.run(ServerV3.java:61)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+Caused by: java.io.EOFException
+	at java.base/java.io.DataInputStream.readFully(DataInputStream.java:210)
+	at java.base/java.io.DataInputStream.readUnsignedShort(DataInputStream.java:341)
+	at java.base/java.io.DataInputStream.readUTF(DataInputStream.java:575)
+Caused by: java.io.EOFException
+
+	at java.base/java.io.DataInputStream.readUTF(DataInputStream.java:550)
+	at me.net.socket.ServerV3$Session.run(ServerV3.java:43)
+	... 1 more
+```
+
+클라이언트의 연결을 직접 종료하면 클라이언트 프로세스가 종료되면서, 클라이언트와 서버의 TCP 연결로 함께 종료 됨
+
+이때 서버에서 readUTF()로 클라이언트가 메시지를 읽으려고 하면 `EOFException`이 발생함
+
+소켓의 TCP 연결이 종료되었기 때문에 더는 읽을 수 있는 메시지가 없다는 뜻임
+
+EOF(파일의 끝)가 여기서는 전송의 끝을 의미함
+
+여기서 심각한 문제가 하나 있음. 이렇게 예외가 발생해버리면 서버에서 자원 정리 코드를 호출하지 못한다는 점임
+
+서버 로그를 보면 종료 로그가 없는 것을 확인할 수 있음
+
+자바 객체는 GC가 되지만 자바 외부의 자원은 자동으로 GC 되는게 아님 따라서 꼭 정리를 해주어야함
+
+(TCP 연결의 경우 운영체제가 어느정도 연결을 정리해주지만, 직접 연결을 종료할 때 보다 더 많은 시간이 걸릴수 있음)
 
 
 
