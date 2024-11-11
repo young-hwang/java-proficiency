@@ -27,4 +27,34 @@ Caused by: me.net.autoclosable.CallException: resource2 ex
 
 > net.autoclosable.ResourceCloseMainV2 참조
  
- 
+**null 체크**
+
+`finally` 코드 블록을 사용해서 자원을 닫는 코드가 항상 호출되도록 함
+
+`resource2` 객체를 생성하기 전에 예외가 발생하면 `resource2`는 `null`이 됨. 따라서 `null` 체크를 해야함
+
+`resource1`의 경우에도 `resource1`을 생성하는 중에 예외가 발생한다면 `null` 체크가 필요함
+
+**자원 정리중에 예외가 발생하는 문제**
+
+`finally` 코드 블록은 항상 호출되기 때문에 자원이 정리될 거 같지만, 자원을 정리하는 중에 `finally` 코드 블록 안에서 `resource2.closeEx()`를 호출하면서 예외가 발생
+
+결과적으로 `resource1.closeEx()`는 호출되지 않음
+
+**핵심 예외가 바뀌는 문제**
+
+이 코드에서 발생한 핵심적인 예외는 `CallException` 임
+
+그런데 `finally` 코드 블록에서 자원을 정리하면서 `CloseException` 예외가 추가로 발생하였음
+
+이 경우 `logic()`을 호출한 쪽에서는 핵심 예외인 `CallException`이 아니라 `finally` 블록에서 새로 생성된 `CloseException`을 받게 됨. **핵심 예외가 사라진 것**
+
+**정리하면 다음과 같은 문제가 있음**
+
+- `close()` 시점에 실수로 예외를 던지면, 이후 다른 자원을 닫을 수 없는 문제 발생
+- `finally` 블럭 안에서 자원을 닫을 때 예외가 발생하면, 핵심 예외가 `finally`에서 발생한 부가 예외로 바뀌어 핵심 예외가 사라짐
+
+
+
+
+
