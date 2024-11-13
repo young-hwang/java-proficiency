@@ -76,8 +76,45 @@ Caused by: me.net.autoclosable.CallException: resource2 ex
 
 이러한 문제를 한번에 해결하는 것이 바로 `try-with-resources` 구문임
 
+# 자원 정리 4
 
+`try-with-resources`에 대해서 조금 더 깊게 확인
 
+> net.autoclosable.ResourceV2 참조
+> net.autoclosable.ResourceCloseMainV4 참조
 
+`try-with-resources`는 단순하게 `close()`를 자동 호출해준다는 정도의 기능만 제공하는 것은 아님
 
+2가지 핵심 문제와 4가지 부가 문제 총 6가지 문제를 모두 해결하는 장치
+
+**2가지 핵심 문제**
+
+- `close()` 시점에 실수로 예외를 던지면, 이후 다른 자원을 닫을 수 없는 문제 발생
+- `finally` 블럭 안에서 자원을 닫을 때 예외가 발생하면, 핵심 예외가 `finally`에서 발생한 부가 예외로 바뀌어 버림. 핵심 예외가 사라짐
+
+**6가지 부가 문제**
+
+- `resource` 변수를 선언하면서 동시에 할당할 수 없음(`try`, `finally` 코드 블럭과 변수 스코프가 다른 문제)
+- `catch` 이후에 `finally` 호출, 자원 정리가 조금 늦어짐
+- 개발자가 실수로 `close()`를 호출하지 않을 가능성
+- 개발자가 `close()` 호출 순서를 실수, 보통 자원을 생성한 순서와 반대로 닫아야함
+
+**try-with-Resources 장점**
+
+- **리소스 누수 방지**: 모든 리소스가 제대로 닫히도록 보장. 실수로 `finally` 블록을 적지 않거나 `finally` 블럭 안에서 자원 해제 코드를 누락하는 문제들을 예방
+- **코드 간결성 및 가독성 향상**: 명시적인 `close()` 호출이 필요 없어 코드가 더 간결하고 읽기 쉬어짐
+- **스코프 범위 한정**: 예를 들어 리소스로 사용되는 `resource1, 2` 변수의 스코프가 `try` 블럭 안으로 한정됨. 따라서 코드 유지보수가 더 쉬워짐
+- **조금 더 빠른 자원 해제**: 기존에는 try->catch->finally로 catch 이후에 자원을 반납. `try-with-resources` 구문은 `try` 블록이 끝나면 즉시 `close()`를 호출함
+- **자원 정리 순서**: 먼저 선언한 자원을 나중에 정리
+- **부가 예외 포함**: `Suppressed`를 통한 부가 예외 확인
+
+**try-with-resources 예외 처리와 부가 예외 포함**
+
+`try-with-resources`를 사용하는 중에 핵심 로직 예외와 자원을 정리하는 중에 발생하는 부가 예외가 모두 발생하면 어떻게 될까?
+
+- `try-with-resources`는 핵심 예외를 반환
+- 부가 예외는 핵심 예외안에 `Suppressed`로 담아서 반환
+- 개발자는 자원 정리 중에 발생한 부가 예외를 `e.getSuppressed()`를 통해 활용
+
+자바 예외에는 `e.addSuppressed(ex)` 라는 메소드가 있어서 예외 안에 참고할 예외를 담아둘 수 있음. `try-with-resources`와 함께 등장
 
