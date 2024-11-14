@@ -478,3 +478,15 @@ EOF(파일의 끝)가 여기서는 전송의 끝을 의미함
 
 - 자원 정리시 `finally` 코드 블록에서 `SocketCloseUtil.closeAll()`만 호출하면 됨
 
+# 네트워크 프로그램 5 - 자원 정리 2
+
+`try-with-resources`를 적용
+
+> net.socket.ClientV5 참조
+> net.socket.ServerV5 참조
+
+- 서버에`try-with-resources` 를 적용
+- `Socket` 객체의 경우 `Session` 에서 직접 생성하는 것이 아니라 외부에서 받아오는 객체 
+  - 이 경우 `try` 선언부에 예제와 같이 객체의 참조를 넣어두면 자원 정리 시점에 `AutoCloseable` 이 호출됨
+- `AutoCloseable` 이 호출되어서 정말 소켓의 `close()` 메서드가 호출되었는지 확인하기 위해 마지막에 `socket.isClosed()` 를 호출하는 코드 삽입
+ 
