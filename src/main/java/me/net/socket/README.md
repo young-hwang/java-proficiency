@@ -463,3 +463,18 @@ EOF(파일의 끝)가 여기서는 전송의 끝을 의미함
 (TCP 연결의 경우 운영체제가 어느정도 연결을 정리해주지만, 직접 연결을 종료할 때 보다 더 많은 시간이 걸릴수 있음)
 
 
+# 네트워크 프로그램4 - 자원 정리1
+
+> net.socket.SocketCloseUtil 참조
+
+- 기본적인 `null` 체크와 자원 종료 시 예외를 처리하는 코드 작성(자원 처리 과정 중 발생한 문제는 대응할 수 있는 부분이 거의 없음, 간단히 로그 생성으로 충분)
+- `Socket`을 먼저 생성하고, `Socket`을 기반으로 `InputStream`, `OutputStream`을 생성하였으므로 `Socket`을 마지막에 닫아야함
+
+> net.socket.ClientV4 참조
+
+- 자원 정리시 `finally` 코드 블록에서 `SocketCloseUtil.closeAll()`만 호출하면 됨
+
+> net.socket.ServerV4 참조
+
+- 자원 정리시 `finally` 코드 블록에서 `SocketCloseUtil.closeAll()`만 호출하면 됨
+
