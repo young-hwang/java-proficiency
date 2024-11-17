@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<project version="4">
-  <component name="ProjectModuleManager">
-    <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/annotation-processing-create-builder/annotation-processing/java-proficiency.annotation-processing-create-builder.annotation-processing.main.iml" filepath="$PROJECT_DIR$/.idea/modules/annotation-processing-create-builder/annotation-processing/java-proficiency.annotation-processing-create-builder.annotation-processing.main.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/modules/annotation-processing-create-builder/annotation-user/java-proficiency.annotation-processing-create-builder.annotation-user.main.iml" filepath="$PROJECT_DIR$/.idea/modules/annotation-processing-create-builder/annotation-user/java-proficiency.annotation-processing-create-builder.annotation-user.main.iml" />
-    </modules>
-  </component>
-</project>

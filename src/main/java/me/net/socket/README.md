@@ -541,7 +541,7 @@ EOF(파일의 끝)가 여기서는 전송의 끝을 의미함
 
 왜냐면 서버를 종료하는 시점에도 `Session`의 자원을 정리해야 하기 때문
 
-**try-with-resource는 사용과 해제를 묶아서 처리할 때 사용**
+## try-with-resource는 사용과 해제를 묶아서 처리할 때 사용
 
 `try-with-resources`는 try 선언부에서 사용한 자원을 try가 끝나는 시점에 정리함
 
@@ -549,7 +549,7 @@ EOF(파일의 끝)가 여기서는 전송의 끝을 의미함
 
 하지만 지금은 서버를 종료하는 시점에도 `Session`이 사용하는 자원을 정리해야하므로 `Session` 안의 `try-with-resources`를 통해 처리할 수 없음
 
-**동시성 문제**
+## 동시성 문제
 
 ```java
 public synchronized void close() {}
@@ -561,6 +561,64 @@ public synchronized void close() {}
 - `close()`가 다른 스레드에서 동시에 중복 호출될 가능성이 있음
 - 이런 문제를 막기 위해 `synchronized` 키워드를 사용. 자원 정리 코드가 중복 호출 되는 것을 막기 위해 `closed` 변수를 플래그로 사용
 
+# 네트워크 프로그램6 - 자원 정리4
 
+> net.socket.ServerV6 참조
 
+## Shutdown Hook 등록
 
+```java
+    ShutDownHook shutDownHook = new ShutDownHook(serverSocket, sessionManager);
+    Runtime.getRuntime().addShutdownHook(new Thread(shutDownHook, "shutdown"));
+```
+
+- `Runtime.getRuntime().addShutdownHook()`을 사용하면 자바 종료시 호출되는 셧다운 훅을 등록할 수 있음
+- 셧다운이 발생했을 때 처리할 작업과 스레드를 등록 필요
+
+## Shutdown Hook 실행
+
+- 셧다운 훅이 실행될 때 모든 자원을 정리
+`sessionManager.closeAll()` : 모든 세션이 사용하는 자원(`Socket` , `InputStream` , `OutputStream` )을 정리
+`serverSocket.close()` : 서버 소켓을 닫음
+
+## 자원 정리 대기 이유
+
+```java
+Thread.sleep(1000); // 자원 정리 대기
+```
+
+보통 모든 non 데몬 스레드의 실행이 완료되면 자바 프로세스가 정상 종료됨. 하지만 다음과 같은 종료도 존재
+
+- 사용자가 Ctrl+C를 눌러서 프로그램을 중단
+- `kill` 명령 전달 (`kill -9` 제외)
+- IntelliJ의 stop 버튼
+ 
+이런 경우에는 non 데몬 스레드의 종료 여부와 관계없이 자바 프로세스가 종료
+
+단 셧다운 훅의 실행이 끝날 때 까지는 기다려줌
+
+셧다운 훅의 실행이 끝나면 non 데몬 스레드의 실행 여부와 상관 없이 자바 프로세스는 종료
+
+따라서 다른 스레드가 자원을 정리하거나 필요한 로그를 남길 수 있도록 셧다운 훅의 실행을 잠시 대기할 필요가 있음
+
+## 실행 결과
+
+```shell
+23:43:58.708 [ shutdown] start to close server socket and session manager
+23:43:58.710 [ shutdown] close connection: Socket[addr=/127.0.0.1,port=50703,localport=12345]
+23:43:58.710 [ Thread-0] java.net.SocketException: Socket closed
+23:43:58.710 [ shutdown] close connection: Socket[addr=/127.0.0.1,port=50709,localport=12345]
+23:43:58.710 [ Thread-1] java.net.SocketException: Socket closed
+23:43:58.710 [     main] Close Server Socket: java.net.SocketException: Socket closed
+```
+
+서버를 종료하면 `shutdown` 스레드가 `shutdownHook` 을 실행하고, 세션의 `Socket` 의 연결을 `close()` 로 닫음.
+
+- `[ Thread-0] java.net.SocketException: Socket closed`
+- `Session` 의 `input.readUTF()` 에서 입력을 대기하는 `Thread-0` 스레드는 `SocketException: Socket closed` 예외를 받고 종료. 참고로 이 예외는 자신의 소켓을 닫았을 때 발생.
+ 
+`shutdown` 스레드는 서버 소켓을 `close()`로 닫음.
+
+- `[ main] 서버 소캣 종료: java.net.SocketException: Socket closed`
+- `serverSocket.accept();` 에서 대기하고 있던 `main` 스레드는 `java.net.SocketException: Socket closed` 예외를 받고 종료.
+- 

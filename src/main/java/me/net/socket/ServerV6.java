@@ -11,12 +11,17 @@ import static me.util.MyLogger.log;
 
 public class ServerV6 {
     private static final int PORT = 12345;
-    private static final SessionManagerV6 sessionManager = new SessionManagerV6();
 
     public static void main(String[] args) throws IOException, InterruptedException {
         log("Start Server");
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            log("Server Socket Listening Port: " + PORT);
+        final SessionManagerV6 sessionManager = new SessionManagerV6();
+        final ServerSocket serverSocket = new ServerSocket(PORT);
+        log("Server Socket Listening Port: " + PORT);
+
+        ShutDownHook shutDownHook = new ShutDownHook(serverSocket, sessionManager);
+        Runtime.getRuntime().addShutdownHook(new Thread(shutDownHook, "shutdown"));
+
+        try {
             while (true) {
                 Socket socket = serverSocket.accept();
                 log("Connect Socket " + socket);
@@ -24,6 +29,8 @@ public class ServerV6 {
                 Thread thread = new Thread(session);
                 thread.start();
             }
+        } catch (IOException e) {
+            log("Close Server Socket: " + e);
         }
     }
 
@@ -75,6 +82,29 @@ public class ServerV6 {
             closeAll(socket, dataInputStream, dataOutputStream);
             closed = true;
             log("close connection: " + socket);
+        }
+    }
+
+    private static class ShutDownHook implements Runnable{
+        private final ServerSocket serverSocket;
+        private final SessionManagerV6 sessionManager;
+
+        public ShutDownHook(ServerSocket serverSocket, SessionManagerV6 sessionManager) {
+            this.serverSocket = serverSocket;
+            this.sessionManager = sessionManager;
+        }
+
+        @Override
+        public void run() {
+            log("start to close server socket and session manager");
+            try {
+                sessionManager.closeAll();
+                serverSocket.close();
+                Thread.sleep(1000);
+            } catch (Exception e) {
+                log("close server socket: " + e);
+            }
+            log("close server socket and session manager");
         }
     }
 }
