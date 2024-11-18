@@ -621,4 +621,4 @@ Thread.sleep(1000); // 자원 정리 대기
 
 - `[ main] 서버 소캣 종료: java.net.SocketException: Socket closed`
 - `serverSocket.accept();` 에서 대기하고 있던 `main` 스레드는 `java.net.SocketException: Socket closed` 예외를 받고 종료.
-- 
+
