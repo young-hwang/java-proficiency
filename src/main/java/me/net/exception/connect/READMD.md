@@ -166,4 +166,81 @@ java.net.SocketTimeoutException: Read timed out
 
 **외부 서버와 통신을 하는 경우 반드시 연결 타임아웃과 소켓 타임아웃을 지정하자.**
 
+# 네트워크 예외3 - 정상 종료
+
+TCP에는 2가지 종류의 종료가 존재
+
+- 정상 종료
+- 강제 종료
+
+## 정상 종료
+
+TCP에서 A,B가 서로 통신한다고 가정할 때 TCP 연결을 종료하려면 서로 FIN 메시지를 보내야함
+
+- A (FIN)-> B: A가 B로 FIN 메시지 전달
+- A <-(FIN) B: FIN 메시지를 받은 B도 A에게 FIN 메시지 전달
+
+`socket.close()`를 호출하면 TCP에서 종료의 의미인 FIN 패킷을 상대방에게 전달함
+
+FIN 패킷을 받으면 상대방도 `socket.close()`를 호출해서 FIN 패킷을 상대방에게 전달해야함
+
+- FIN: 연결 종료
+- ACK: 연결 종료 응답
+
+```
+State      Server                    Client       State
+───────────────────────────────────────────────────────
+[FIN_WAIT_1] |-FIN--------------------->|  [CLOSE_WAIT]
+[FIN_WAIT_2] |<---------------------ACK-|  
+             |<---------------------FIN-|    [LAST_ACK]        
+[TIME_WAIT]  |-ACK--------------------->|      [CLOSED]
+     ...     |                          | 
+[CLOSED]     |                          |
+───────────────────────────────────────────────────────
+```
+
+- 클라이언트와 서버가 연결되어 있음
+- 서버가 연결 종료를 위해 `socket.close()`를 호출함
+  - 서버는 클라이언트에 FIN 패킷을 전달
+- 클라이언트는 FIN 패킷을 받음
+  - 클라이언트의 OS에서 FIN에 대한 ACK 패킷을 전달함
+- 클라이언트도 종료를 위해 `socket.close()`를 호출
+  - 클라이언트는 서버에 FIN 패킷을 전달함
+  - 서버의 OS는 FIN 패킷에 대한 ACK 패킷을 전달함
+
+> net.exception.close.normal.NormalCloseServer 참조
+> net.exception.close.normal.NormalClientServer 참조
+
+클라이언트는 서버의 메시지를 3가지 방법으로 읽음
+
+- `read()` : 1byte 단위로 읽음
+- `readLine()` : 라인 단위로 `String` 으로 읽음
+- `readUTF()` : `DataInputStream` 을 통해 `String` 단위로 읽음
+
+## 전체 과정
+
+1. 클라이언트가 서버에 접속 
+1. 클라이언트는 `input.read()` 로 서버의 데이터를 읽기 위해 대기
+1. 1초 뒤에 서버에서 연결을 종료 
+   1. 서버에서 `socket.close()` 를 호출하면 클라이언트에 FIN 패킷을 보냄
+1. 클라이언트는 FIN 패킷을 받음
+1. 서버가 소켓을 종료했다는 의미이므로 클라이언트는 더는 읽을 데이터가 없음
+1. `FIN` 패킷을 받은 클라이언트의 소켓은 더는 서버를 통해 읽을 데이터가 없다는 의미로 -1(EOF)를 반환
+ 
+여기서 각각의 상황에 따라 EOF를 해석하는 방법이 다름
+
+- `read()` -> -1
+  - EOF의 의미를 숫자 -1로 반환
+- `BufferedReader().readLine()` -> `null`
+  - `BufferedReader()` 는 문자 `String` 을 반환한다. 따라서 -1을 표현할 수 없다. 대신에 `null` 을 반환
+- `DataInputStream.readUTF()` `EOFException`
+  - `DataInputStream` 은 이 경우 `EOFException` 을 던짐
+  - 예외를 통해서 연결을 종료할 수 있는 방법을 제공
+
+여기서 중요한 점은 EOF가 발생하면 상대방이 FIN 메시지를 보내면서 소켓 연결을 끊었다는 뜻임
+
+이 경우 소켓에 다른 작업을 하면 안되고, FIN 메시지를 받은 클라이언트도 `close()` 를 호출해서 상대방에 FIN 메시지를 보내고 소켓 연결을 끊어야함 
+
+이렇게 하면 서로 FIN 메시지를 주고 받으면서 TCP 연결이 정상 종료됨
+
 
