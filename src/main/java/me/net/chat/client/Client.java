@@ -1,4 +1,4 @@
-package me.net.chat;
+package me.net.chat.client;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;

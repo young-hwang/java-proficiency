@@ -1,8 +1,7 @@
-package me.net.chat;
+package me.net.chat.client;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.net.Socket;
 
 import static me.util.MyLogger.log;
 
