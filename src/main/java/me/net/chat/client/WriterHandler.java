@@ -6,13 +6,13 @@ import java.util.Scanner;
 
 import static me.util.MyLogger.log;
 
-public class WriteHandler implements Runnable{
+public class WriterHandler implements Runnable{
     private final String DELIMETER = " | ";
     private DataOutputStream output;
     private Client client;
     private boolean isClosed = false;
 
-    public WriteHandler(DataOutputStream output, Client client) {
+    public WriterHandler(DataOutputStream output, Client client) {
         this.output = output;
         this.client = client;
     }
@@ -48,7 +48,7 @@ public class WriteHandler implements Runnable{
     }
 
     private String inputUsername(Scanner scanner) {
-        System.out.println("Input username: ");
+        System.out.print("Input username: ");
         String username;
         do {
             username = scanner.nextLine();

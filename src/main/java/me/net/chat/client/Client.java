@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.Socket;
 
 import static me.net.socket.SocketCloseUtil.closeAll;
+import static me.util.MyLogger.log;
 
 public class Client {
     private final String ip;
@@ -16,7 +17,7 @@ public class Client {
     private DataOutputStream output;
 
     private ReaderHandler readerHandler;
-    private WriteHandler writeHandler;
+    private WriterHandler writeHandler;
     private boolean isClosed = false;
 
 
@@ -27,8 +28,13 @@ public class Client {
 
     public void start() throws IOException {
         this.socket = new Socket(ip, port);
+        log("Connect Server " + socket);
         this.input = new DataInputStream(socket.getInputStream());
         this.output = new DataOutputStream(socket.getOutputStream());
+        this.readerHandler = new ReaderHandler(input, this);
+        this.writeHandler = new WriterHandler(output, this);
+        new Thread(readerHandler).start();
+        new Thread(writeHandler).start();
     }
 
     public synchronized void close() {
