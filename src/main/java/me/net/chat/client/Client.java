@@ -9,7 +9,7 @@ import static me.net.socket.SocketCloseUtil.closeAll;
 import static me.util.MyLogger.log;
 
 public class Client {
-    private final String ip;
+    private final String host;
     private final int port;
 
     private Socket socket;
@@ -21,20 +21,22 @@ public class Client {
     private boolean isClosed = false;
 
 
-    public Client(String ip, int port) {
-        this.ip = ip;
+    public Client(String host, int port) {
+        this.host = host;
         this.port = port;
     }
 
     public void start() throws IOException {
-        this.socket = new Socket(ip, port);
+        this.socket = new Socket(host, port);
         log("Connect Server " + socket);
         this.input = new DataInputStream(socket.getInputStream());
         this.output = new DataOutputStream(socket.getOutputStream());
         this.readerHandler = new ReaderHandler(input, this);
         this.writeHandler = new WriterHandler(output, this);
-        new Thread(readerHandler).start();
-        new Thread(writeHandler).start();
+        Thread readerThread = new Thread(readerHandler);
+        Thread writerThread = new Thread(writeHandler);
+        readerThread.start();
+        writerThread.start();
     }
 
     public synchronized void close() {

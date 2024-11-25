@@ -61,7 +61,7 @@ public class WriterHandler implements Runnable{
             return;
         }
         try {
-            System.in.close();
+            System.in.close(); // Scanner 입력 중지(사용자의 입력 닫음)
         } catch (IOException e) {
             log(e);
         }
