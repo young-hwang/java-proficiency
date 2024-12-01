@@ -1,11 +1,11 @@
-package me.net.chat.server;
+package me.chat.server;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static me.util.MyLogger.log;
+import static me.chat.common.MyLogger.log;
 
 public class SessionManager {
     private final List<Session> sessions = new ArrayList<>();

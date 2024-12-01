@@ -1,10 +1,10 @@
-package me.net.chat.server;
+package me.chat.server;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-import static me.util.MyLogger.log;
+import static me.chat.common.MyLogger.log;
 
 public class Server {
     private final int port;

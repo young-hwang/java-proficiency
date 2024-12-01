@@ -1,4 +1,4 @@
-package me.net.chat.server;
+package me.chat.server;
 
 import java.io.IOException;
 import java.util.List;

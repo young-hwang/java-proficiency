@@ -1,12 +1,12 @@
-package me.net.chat.server;
+package me.chat.server;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
 
-import static me.net.socket.SocketCloseUtil.closeAll;
-import static me.util.MyLogger.log;
+import static me.chat.common.SocketCloseUtil.closeAll;
+import static me.chat.common.MyLogger.log;
 
 public class Session implements Runnable {
     private final Socket socket;

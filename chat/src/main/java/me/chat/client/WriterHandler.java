@@ -1,10 +1,10 @@
-package me.net.chat.client;
+package me.chat.client;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Scanner;
 
-import static me.util.MyLogger.log;
+import static me.chat.common.MyLogger.log;
 
 public class WriterHandler implements Runnable{
     private final String DELIMETER = " | ";

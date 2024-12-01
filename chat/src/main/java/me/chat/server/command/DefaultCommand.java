@@ -1,6 +1,6 @@
-package me.net.chat.server.command;
+package me.chat.server.command;
 
-import me.net.chat.server.Session;
+import me.chat.server.Session;
 
 import java.io.IOException;
 import java.util.Arrays;

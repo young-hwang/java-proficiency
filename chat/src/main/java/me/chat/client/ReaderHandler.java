@@ -1,9 +1,9 @@
-package me.net.chat.client;
+package me.chat.client;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 
-import static me.util.MyLogger.log;
+import static me.chat.common.MyLogger.log;
 
 public class ReaderHandler implements Runnable {
     private final DataInputStream input;

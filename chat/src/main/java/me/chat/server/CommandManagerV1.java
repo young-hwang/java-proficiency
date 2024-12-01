@@ -1,6 +1,4 @@
-package me.net.chat.server;
-
-import me.net.socket.ServerV6;
+package me.chat.server;
 
 import java.io.IOException;
 
