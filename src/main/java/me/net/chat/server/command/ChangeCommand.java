@@ -1,4 +1,7 @@
-package me.net.chat.server;
+package me.net.chat.server.command;
+
+import me.net.chat.server.Session;
+import me.net.chat.server.SessionManager;
 
 import java.io.IOException;
 
