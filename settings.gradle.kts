@@ -9,3 +9,4 @@ findProject(":annotation-processing-create-builder:annotation-user")?.name = "an
 include("annotation-processing-create-builder:annotation-spi")
 findProject(":annotation-processing-create-builder:annotation-spi")?.name = "annotation-spi"
 include("chat")
+include("web-server")
