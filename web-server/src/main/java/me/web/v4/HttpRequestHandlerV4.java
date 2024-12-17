@@ -81,10 +81,12 @@ public class HttpRequestHandlerV4 implements Runnable {
     }
 
     private void site2(HttpResponse writer) {
+        writer.setStatusCode(200);
         writer.writeBody("<h1>site2</h1>");
     }
 
     private void site1(HttpResponse writer) {
+        writer.setStatusCode(200);
         writer.writeBody("<h1>site1</h1>");
     }
 }
