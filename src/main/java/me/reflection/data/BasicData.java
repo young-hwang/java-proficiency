@@ -8,7 +8,7 @@ public class BasicData {
         System.out.println("BasicData.BasicData()");
     }
 
-    public BasicData(String publicField) {
+    private BasicData(String publicField) {
         this.publicField = publicField;
         System.out.println("publicField = " + publicField);
     }
