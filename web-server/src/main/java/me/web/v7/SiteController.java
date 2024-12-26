@@ -2,8 +2,9 @@ package me.web.v7;
 
 import me.web.httpserver.HttpRequest;
 import me.web.httpserver.HttpResponse;
+import me.web.httpserver.servlet.annotation.Mapping;
 
-public class AnnotationController {
+public class SiteController {
     @Mapping("/")
     public void home(HttpRequest request, HttpResponse response) {
         response.setStatusCode(200);
