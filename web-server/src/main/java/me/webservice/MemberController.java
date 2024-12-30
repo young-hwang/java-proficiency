@@ -1,5 +1,6 @@
 package me.webservice;
 
+import me.web.httpserver.HttpRequest;
 import me.web.httpserver.HttpResponse;
 import me.web.httpserver.servlet.annotation.Mapping;
 
@@ -44,5 +45,34 @@ public class MemberController {
         page.append("<a href='/'>Back to Home</a>");
         page.append("</body></html>");
         response.writeBody(page.toString());
+    }
+
+    @Mapping("/add-member-form")
+    public void addMemberForm(HttpResponse response) {
+        String body = "<html><body>" +
+                "<h1>Add New Member</h1>" +
+                "<form method='POST' action='/add-member'>" +
+                "ID: <input type='text' name='id'/><br>" +
+                "Name: <input type='text' name='name'/><br>" +
+                "Age: <input type='text' name='age'/><br>" +
+                "<input type='submit' value='Add'>" +
+                "</form>" +
+                "<a href='/'>Back to Home</a>" +
+                "</body>" +
+                "</html>";
+        response.writeBody(body);
+    }
+
+    @Mapping("/add-member")
+    public void addMember(HttpRequest request, HttpResponse response) {
+        System.out.println("MemberController addMember");
+        System.out.println("request = " + request);
+
+        String id = request.getParameter("id");
+        String name = request.getParameter("name");
+        int age = Integer.parseInt(request.getParameter("age"));
+
+        Member member = new Member(id, name, age);
+        memberRepository.add(member);
     }
 }

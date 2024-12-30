@@ -17,6 +17,27 @@ public class HttpRequest {
     public HttpRequest(BufferedReader reader) throws IOException {
         parseRequestLine(reader);
         parseHeaders(reader);
+        parseBody(reader);
+    }
+
+    private void parseBody(BufferedReader reader) throws IOException {
+        if (!headers.containsKey("Content-Length")) {
+            return;
+        }
+
+        int contentLength = Integer.parseInt(headers.get("Content-Length"));
+        char[] buffer = new char[contentLength];
+        int read = reader.read(buffer);
+        if (read != contentLength) {
+            throw new IOException("Failed to read entire body. Expected " + contentLength + " bytes but got " + read);
+        }
+        String body = new String(buffer);
+        System.out.println("HTTP Message body = " + body);
+        String contentType = headers.get("Content-Type");
+        if ("application/x-www-form-urlencoded".equals(contentType)) {
+            parseQueryParameters(body);
+        }
+
     }
 
     private void parseHeaders(BufferedReader reader) throws IOException {
@@ -71,5 +92,15 @@ public class HttpRequest {
 
     public String getHeader(String key) {
         return headers.get(key);
+    }
+
+    @Override
+    public String toString() {
+        return "HttpRequest{" +
+                "method='" + method + '\'' +
+                ", path='" + path + '\'' +
+                ", queryParameters=" + queryParameters +
+                ", headers=" + headers +
+                '}';
     }
 }
