@@ -1,9 +1,12 @@
 package me.serializable;
 
+import java.io.Serial;
 import java.io.Serializable;
 
 public class SerialDTO implements Serializable {
-    static final long serialVersionUID = 1L;
+
+    @Serial
+    private static final long serialVersionUID = -2198365437158575342L;
     private String bookName;
     private transient int bookOrder;
     private boolean bestSeller;
