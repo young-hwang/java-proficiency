@@ -17,3 +17,9 @@ dependencies {
 test {
     useJUnitPlatform()
 }
+
+jar {
+    manifest {
+        attributes('Main-Class': 'me.Main') // META-INF/MANIFEST.MF 파일에 java -jar로 실행시 진입점 클래스 지정. Main 메서드가 존재하여야함.
+    }
+}
