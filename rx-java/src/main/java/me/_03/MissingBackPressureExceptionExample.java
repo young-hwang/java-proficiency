@@ -5,6 +5,8 @@ import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 public class MissingBackPressureExceptionExample {
@@ -13,15 +15,15 @@ public class MissingBackPressureExceptionExample {
 
     public static void main(String[] args) throws InterruptedException {
         Flowable.interval(1L, TimeUnit.MILLISECONDS)
-                .doOnNext(data -> log.info("doOnNext" + data))
+                .doOnNext(data -> logger.info("doOnNext" + data))
                 .observeOn(Schedulers.computation())
                 .subscribe(data -> {
-                    log.info("소비자 처리 대기");
+                    logger.info("소비자 처리 대기");
                     TimeUnit.MILLISECONDS.sleep(1000);
-                    log.info("subscribe");
+                    logger.info("subscribe");
                 },
-                        error -> log.info("error", error.getMessage()),
-                        () -> log.info(""));
+                        error -> logger.info("error", error.getMessage()),
+                        () -> logger.info(""));
         Thread.sleep(2000L);
     }
 }
