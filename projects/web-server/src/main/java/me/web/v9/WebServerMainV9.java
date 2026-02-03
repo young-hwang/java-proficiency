@@ -10,8 +10,6 @@ import java.util.List;
 public class WebServerMainV9 {
 
     public static void main(String[] args) throws IOException {
-        ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
-        Package[] definedPackages = contextClassLoader.getDefinedPackages();
         List<Object> controllers = List.of(new SiteController(), new SearchController());
         ServletManager servletManager = new ServletManager();
         servletManager.add("/favicon.ico", new DiscardServlet());

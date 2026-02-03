@@ -71,5 +71,19 @@ for(long loop = from; loop <= to; loop++) {
 JVM 에서 알아서 수행하며, 결과만 확인하면 됩니다.
 worker의 개수는 CPU 개수만큼 증가합니다.
 
+## Parallel Array Sorting
 
+배열을 정렬하는 가장 간편한 방법은 java.util 패키지의 Arrays 클래스를 사용하는 것입니다.
+
+Java 8에서는 `parallelSort()` 메소드가 추가되었으며, 내부적으로 Fork-Join 프레임워크를 사용합니다.
+
+| 메소드 | 설명 |
+|:------|:-----|
+| Arrays.sort() | 단일 스레드 정렬 (TimSort) |
+| Arrays.parallelSort() | Fork-Join 기반 병렬 정렬 |
+
+**특징:**
+- 약 5,000개 이상의 요소부터 parallelSort()가 더 빠름
+- CPU 코어 수에 비례하여 성능 향상
+- 내부적으로 배열을 분할하여 병렬 처리 후 병합
 
