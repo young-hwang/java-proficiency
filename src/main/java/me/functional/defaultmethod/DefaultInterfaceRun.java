@@ -1,0 +1,10 @@
+package me.functional.defaultmethod;
+
+public class DefaultInterfaceRun {
+    public static void main(String[] args) {
+        DefaultInterface obj = new DefaultInterfaceImpl("young");
+        obj.printName();
+        obj.printNameUpper();
+        DefaultInterface.printStatic();
+    }
+}

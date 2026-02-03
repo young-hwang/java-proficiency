@@ -1,12 +1,10 @@
 rootProject.name = "java-proficiency"
-include("java8")
-include("rx-java")
-include("annotation-processing-create-builder")
-include("annotation-processing-create-builder:annotation-processing")
-findProject(":annotation-processing-create-builder:annotation-processing")?.name = "annotation-processing"
-include("annotation-processing-create-builder:annotation-user")
-findProject(":annotation-processing-create-builder:annotation-user")?.name = "annotation-user"
-include("annotation-processing-create-builder:annotation-spi")
-findProject(":annotation-processing-create-builder:annotation-spi")?.name = "annotation-spi"
-include("chat")
-include("web-server")
+
+// Projects
+include(":projects:rx-java")
+include(":projects:chat")
+include(":projects:web-server")
+include(":projects:annotation-processing-create-builder")
+include(":projects:annotation-processing-create-builder:annotation-processing")
+include(":projects:annotation-processing-create-builder:annotation-user")
+include(":projects:annotation-processing-create-builder:annotation-spi")
