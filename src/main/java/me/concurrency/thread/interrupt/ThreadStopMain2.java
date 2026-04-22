@@ -25,7 +25,11 @@ public class ThreadStopMain2 {
                 // interrupt 체크하지 않음
                 while (true) {
                     log("작업중");
-                    Thread.sleep(3000); // 여기서만 인터럽트 발생
+                    // 여기서만 인터럽트 발생
+                    //   - Thread.sleep()
+                    //  - Object.wait()
+                    //  - Thread.join()
+                    Thread.sleep(3000);
                 }
             } catch (InterruptedException e) {
                 log("work thread interrupted" + Thread.currentThread().isInterrupted());
